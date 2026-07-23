@@ -9,13 +9,9 @@ import { calcStreak } from "@/lib/streak";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay(); // 0 = Sunday
-  const diff = day === 0 ? -6 : 1 - day; // move back to Monday
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function daysInMonth(year: number, month: number): number {
+  // month is 0-indexed (JS Date convention)
+  return new Date(year, month + 1, 0).getDate();
 }
 
 export default async function DashboardPage() {
@@ -51,16 +47,6 @@ export default async function DashboardPage() {
     .eq("entry_date", todayISO())
     .maybeSingle();
 
-  // last 7 calendar days, for the streak + weekly chart
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 6);
-  const { data: recentEntries } = await supabase
-    .from("sadhana_entries")
-    .select("entry_date, score")
-    .eq("user_id", user.id)
-    .gte("entry_date", weekAgo.toISOString().slice(0, 10))
-    .order("entry_date", { ascending: true });
-
   const { data: allDates } = await supabase
     .from("sadhana_entries")
     .select("entry_date")
@@ -72,17 +58,27 @@ export default async function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  // build Mon–Sun bars for the current week
-  const monday = startOfWeek(new Date());
-  const scoreByDate = new Map((recentEntries ?? []).map((e) => [e.entry_date, e.score ?? 0]));
-  const weekBars = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().slice(0, 10);
-    return { label: "MTWTFSS"[i], score: scoreByDate.get(dateStr) ?? 0, isFuture: d > new Date() };
-  });
-  const maxScore = Math.max(1, ...weekBars.map((b) => b.score));
+  // build this month's calendar grid, marking which days were logged
+  const now = new Date();
+  const loggedDates = new Set((allDates ?? []).map((e) => e.entry_date));
+  const todayStr = todayISO();
+  const totalDaysInMonth = daysInMonth(now.getFullYear(), now.getMonth());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const leadingBlanks = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1; // week starts Monday
 
+  const monthDays = Array.from({ length: totalDaysInMonth }, (_, i) => {
+    const dayNum = i + 1;
+    const dateStr = new Date(now.getFullYear(), now.getMonth(), dayNum).toISOString().slice(0, 10);
+    return {
+      day: dayNum,
+      logged: loggedDates.has(dateStr),
+      isFuture: dateStr > todayStr,
+      isToday: dateStr === todayStr,
+    };
+  });
+
+  const monthLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  
   return (
     <div className="flex flex-col gap-6 fade-in-up">
       <div className="flex items-center justify-between">
@@ -157,29 +153,37 @@ export default async function DashboardPage() {
       </div>
 
       <div className="card p-4">
-        <h3 className="text-sm font-semibold text-ink mb-3">This week</h3>
-        <div className="flex items-end gap-1.5 h-20">
-          {weekBars.map((bar, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-              <div
-                className="w-full rounded-t"
-                style={{
-                  height: bar.isFuture ? "4%" : `${Math.max(6, (bar.score / maxScore) * 100)}%`,
-                  background: bar.isFuture
-                    ? "rgba(180,83,9,0.12)"
-                    : "linear-gradient(to top, #D97706, #FBBF24)",
-                }}
-              />
+        <h3 className="text-sm font-semibold text-ink mb-3">{monthLabel}</h3>
+        <div className="grid grid-cols-7 gap-1.5">
+          {Array.from({ length: leadingBlanks }).map((_, i) => (
+            <div key={`blank-${i}`} />
+          ))}
+          {monthDays.map((d) => (
+            <div
+              key={d.day}
+              className="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium"
+              style={{
+                background: d.logged ? "#22C55E" : d.isFuture ? "rgba(180,83,9,0.05)" : "rgba(180,83,9,0.12)",
+                color: d.logged ? "#F0FDF4" : "#B45309",
+                outline: d.isToday ? "2px solid #D97706" : "none",
+                outlineOffset: "-2px",
+              }}
+            >
+              {d.day}
             </div>
           ))}
         </div>
-        <div className="flex justify-between mt-2 text-xs text-ink-muted">
-          {weekBars.map((bar, i) => (
-            <span key={i}>{bar.label}</span>
-          ))}
+        <div className="flex items-center gap-3 mt-3 text-[11px] text-ink-muted">
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#22C55E" }} />
+            Logged
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "rgba(180,83,9,0.12)" }} />
+            Missed
+          </span>
         </div>
       </div>
-
       <QuoteCard />
     </div>
   );
