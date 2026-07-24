@@ -7,8 +7,8 @@ export default function HeroBanner() {
   src="/hero-krishna.jpg"
   alt="Radha Krishna"
   fill
-  className="object-cover"
-  style={{ objectPosition: "center 10%" }}
+  className="object-contain"
+  style={{ objectPosition: "center 35%" }}
   priority
 />
     </div>
