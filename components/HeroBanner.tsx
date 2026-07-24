@@ -2,12 +2,12 @@ import Image from "next/image";
 
 export default function HeroBanner() {
   return (
-    <div className="rounded-2xl overflow-hidden shadow-lg h-48 relative">
+    <div className="rounded-2xl overflow-hidden shadow-lg h-72 relative">
       <Image
   src="/hero-krishna.jpg"
   alt="Radha Krishna"
   fill
-  className="object-contain"
+  className="object-cover"
   style={{ objectPosition: "center 35%" }}
   priority
 />
