@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Flame, BookOpen, Headphones, Sunrise, Moon, HandHeart, Sparkles, BookMarked } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flame, BookOpen, Headphones, Sunrise, Moon, HandHeart, Sparkles, BookMarked } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import HeroBanner from "@/components/HeroBanner";
 import StatCard from "@/components/StatCard";
@@ -14,7 +14,11 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { year?: string; month?: string };
+}) {
   const supabase = createClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -58,17 +62,23 @@ export default async function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  // build this month's calendar grid, marking which days were logged
-  const now = new Date();
+  // --- monthly calendar grid, with prev/next navigation ---
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth(); // 0-indexed
+
+  const viewedYear = searchParams.year ? Number(searchParams.year) : currentYear;
+  const viewedMonth = searchParams.month ? Number(searchParams.month) - 1 : currentMonth; // 0-indexed
+
   const loggedDates = new Set((allDates ?? []).map((e) => e.entry_date));
   const todayStr = todayISO();
-  const totalDaysInMonth = daysInMonth(now.getFullYear(), now.getMonth());
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const totalDaysInMonth = daysInMonth(viewedYear, viewedMonth);
+  const monthStart = new Date(viewedYear, viewedMonth, 1);
   const leadingBlanks = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1; // week starts Monday
 
   const monthDays = Array.from({ length: totalDaysInMonth }, (_, i) => {
     const dayNum = i + 1;
-    const dateStr = new Date(now.getFullYear(), now.getMonth(), dayNum).toISOString().slice(0, 10);
+    const dateStr = new Date(viewedYear, viewedMonth, dayNum).toISOString().slice(0, 10);
     return {
       day: dayNum,
       logged: loggedDates.has(dateStr),
@@ -77,8 +87,15 @@ export default async function DashboardPage() {
     };
   });
 
-  const monthLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  
+  const monthLabel = monthStart.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  const prevMonthDate = new Date(viewedYear, viewedMonth - 1, 1);
+  const nextMonthDate = new Date(viewedYear, viewedMonth + 1, 1);
+  const isCurrentMonth = viewedYear === currentYear && viewedMonth === currentMonth;
+
+  const toParams = (d: Date) =>
+    `?year=${d.getFullYear()}&month=${String(d.getMonth() + 1).padStart(2, "0")}`;
+
   return (
     <div className="flex flex-col gap-6 fade-in-up">
       <div className="flex items-center justify-between">
@@ -153,7 +170,30 @@ export default async function DashboardPage() {
       </div>
 
       <div className="card p-4">
-        <h3 className="text-sm font-semibold text-ink mb-3">{monthLabel}</h3>
+        <div className="flex items-center justify-between mb-3">
+          <Link
+            href={toParams(prevMonthDate)}
+            className="p-1.5 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors"
+            aria-label="Previous month"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Link>
+          <h3 className="text-sm font-semibold text-ink">{monthLabel}</h3>
+          {isCurrentMonth ? (
+            <span className="p-1.5 rounded-full text-ink-muted/30" aria-hidden="true">
+              <ChevronRight className="w-4 h-4" />
+            </span>
+          ) : (
+            <Link
+              href={toParams(nextMonthDate)}
+              className="p-1.5 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors"
+              aria-label="Next month"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
+
         <div className="grid grid-cols-7 gap-1.5">
           {Array.from({ length: leadingBlanks }).map((_, i) => (
             <div key={`blank-${i}`} />
@@ -163,8 +203,12 @@ export default async function DashboardPage() {
               key={d.day}
               className="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium"
               style={{
-                background: d.logged ? "#22C55E" : d.isFuture ? "rgba(180,83,9,0.05)" : "rgba(180,83,9,0.12)",
-                color: d.logged ? "#F0FDF4" : "#B45309",
+                background: d.logged
+                  ? "linear-gradient(135deg, #EA580C, #FBBF24)"
+                  : d.isFuture
+                  ? "rgba(180,83,9,0.05)"
+                  : "rgba(180,83,9,0.12)",
+                color: d.logged ? "#FFF8EC" : "#B45309",
                 outline: d.isToday ? "2px solid #D97706" : "none",
                 outlineOffset: "-2px",
               }}
@@ -175,7 +219,10 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-3 mt-3 text-[11px] text-ink-muted">
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#22C55E" }} />
+            <span
+              className="w-2.5 h-2.5 rounded-sm inline-block"
+              style={{ background: "linear-gradient(135deg, #EA580C, #FBBF24)" }}
+            />
             Logged
           </span>
           <span className="flex items-center gap-1">
@@ -184,6 +231,7 @@ export default async function DashboardPage() {
           </span>
         </div>
       </div>
+
       <QuoteCard />
     </div>
   );
