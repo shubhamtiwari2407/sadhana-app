@@ -3,13 +3,14 @@ export type SadhanaEntry = {
   rounds_chanted: number;
   reading_minutes: number;
   listening_minutes: number;
-  service_minutes: number;
   mangal_aarti: boolean;
+  seva: boolean; // service done, yes/no
   srimad_bhagavatam: boolean; // attended SB class, yes/no
 };
 
 // All point values live here. Change a number, the whole app (including the
-// scoring reference card on the Board tab) updates automatically.
+// scoring reference card on the Board tab, and the live preview on the Log
+// tab) updates automatically.
 export const POINTS = {
   wakeBefore0430: 10,
   wakeBefore0500: 7,
@@ -19,8 +20,8 @@ export const POINTS = {
   roundsTargetBonus: 5,
   per15MinReading: 2,
   per15MinListening: 2,
-  per15MinService: 2,
   mangalAarti: 5,
+  seva: 5,
   srimadBhagavatam: 5,
 };
 
@@ -42,8 +43,8 @@ export function calculateScore(entry: SadhanaEntry): number {
   }
   score += Math.floor(entry.reading_minutes / 15) * POINTS.per15MinReading;
   score += Math.floor(entry.listening_minutes / 15) * POINTS.per15MinListening;
-  score += Math.floor(entry.service_minutes / 15) * POINTS.per15MinService;
   if (entry.mangal_aarti) score += POINTS.mangalAarti;
+  if (entry.seva) score += POINTS.seva;
   if (entry.srimad_bhagavatam) score += POINTS.srimadBhagavatam;
   return score;
 }
@@ -57,9 +58,9 @@ export function scoringBreakdown(): { label: string; value: string }[] {
     { label: "Rounds chanted", value: `+${POINTS.perRound} pt/round` },
     { label: `${POINTS.roundsTarget}-round bonus`, value: `+${POINTS.roundsTargetBonus} pts` },
     { label: "Reading", value: `+${POINTS.per15MinReading} pts/15 min` },
-    { label: "Listening", value: `+${POINTS.per15MinListening} pts/15 min` },
-    { label: "Service", value: `+${POINTS.per15MinService} pts/15 min` },
+    { label: "Hearing", value: `+${POINTS.per15MinListening} pts/15 min` },
     { label: "Mangal aarti attended", value: `+${POINTS.mangalAarti} pts` },
+    { label: "Seva done", value: `+${POINTS.seva} pts` },
     { label: "Srimad Bhagavatam class", value: `+${POINTS.srimadBhagavatam} pts` },
   ];
 }
