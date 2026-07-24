@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Sunrise, Moon, Flame, BookOpen, Headphones, Sparkles, HandHeart, BookMarked } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft, ChevronRight, Sunrise, Moon, Flame, BookOpen, Headphones, Sparkles, HandHeart, BookMarked } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { calculateScore } from "@/lib/scoring";
 import CheckTile from "@/components/CheckTile";
@@ -10,28 +10,54 @@ import CheckTile from "@/components/CheckTile";
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+const EMPTY_FORM = {
+  wake_time: "",
+  sleep_time: "",
+  rounds_chanted: 0,
+  reading_minutes: 0,
+  listening_minutes: 0,
+  mangal_aarti: false,
+  seva: false,
+  srimad_bhagavatam: false,
+};
+
 export default function EntryForm() {
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const todayStr = todayISO();
+  const dateParam = searchParams.get("date");
+  const selectedDate = dateParam && dateParam <= todayStr ? dateParam : todayStr;
+  const isToday = selectedDate === todayStr;
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  const [form, setForm] = useState({
-    wake_time: "",
-    sleep_time: "",
-    rounds_chanted: 0,
-    reading_minutes: 0,
-    listening_minutes: 0,
-    mangal_aarti: false,
-    seva: false,
-    srimad_bhagavatam: false,
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const liveScore = useMemo(() => calculateScore(form), [form]);
 
+  const navigateToDate = useCallback(
+    (date: string) => {
+      const clamped = date > todayStr ? todayStr : date;
+      router.push(`/entry?date=${clamped}`);
+    },
+    [router, todayStr]
+  );
+
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setShowSuccess(false);
+
     (async () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
@@ -42,8 +68,10 @@ export default function EntryForm() {
         .from("sadhana_entries")
         .select("*")
         .eq("user_id", userData.user.id)
-        .eq("entry_date", todayISO())
+        .eq("entry_date", selectedDate)
         .maybeSingle();
+
+      if (cancelled) return;
 
       if (data) {
         setForm({
@@ -56,10 +84,16 @@ export default function EntryForm() {
           seva: data.seva ?? false,
           srimad_bhagavatam: data.srimad_bhagavatam ?? false,
         });
+      } else {
+        setForm(EMPTY_FORM);
       }
       setLoading(false);
     })();
-  }, [router, supabase]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate, router, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +111,7 @@ export default function EntryForm() {
     const { error: upsertError } = await supabase.from("sadhana_entries").upsert(
       {
         user_id: userData.user.id,
-        entry_date: todayISO(),
+        entry_date: selectedDate,
         ...form,
         sleep_time: form.sleep_time || null,
         wake_time: form.wake_time || null,
@@ -94,21 +128,29 @@ export default function EntryForm() {
     }
 
     setShowSuccess(true);
-    setTimeout(() => {
-      router.push("/");
-      router.refresh();
-    }, 900);
+    if (isToday) {
+      setTimeout(() => {
+        router.push("/");
+        router.refresh();
+      }, 900);
+    } else {
+      setTimeout(() => setShowSuccess(false), 1800);
+    }
   };
 
-  if (loading) return <p className="text-ink-muted text-center py-16">Loading today's entry…</p>;
+  const dateObj = new Date(selectedDate + "T00:00:00");
+
+  if (loading) return <p className="text-ink-muted text-center py-16">Loading entry…</p>;
 
   return (
     <div className="flex flex-col gap-4 pb-20">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl text-gold-soft">Today's sadhana</h1>
+          <h1 className="font-display text-2xl text-gold-soft">
+            {isToday ? "Today's sadhana" : "Log past sadhana"}
+          </h1>
           <p className="text-sm text-ink-muted mt-1">
-            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+            {dateObj.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
         <div className="card px-3 py-2 text-center">
@@ -116,6 +158,42 @@ export default function EntryForm() {
           <p className="text-[10px] text-ink-muted mt-0.5">pts so far</p>
         </div>
       </div>
+
+      <div className="flex items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => navigateToDate(shiftDate(selectedDate, -1))}
+          className="p-1.5 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors"
+          aria-label="Previous day"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <input
+          type="date"
+          value={selectedDate}
+          max={todayStr}
+          onChange={(e) => e.target.value && navigateToDate(e.target.value)}
+          className="text-sm text-ink bg-transparent border-none text-center font-medium px-2 py-1"
+        />
+        <button
+          type="button"
+          onClick={() => navigateToDate(shiftDate(selectedDate, 1))}
+          disabled={isToday}
+          className="p-1.5 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          aria-label="Next day"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+      {!isToday && (
+        <button
+          type="button"
+          onClick={() => navigateToDate(todayStr)}
+          className="text-xs text-gold-soft underline text-center -mt-2"
+        >
+          Jump to today
+        </button>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium text-ink">
@@ -129,13 +207,15 @@ export default function EntryForm() {
               value={form.wake_time}
               onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
             />
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, wake_time: nowHHMM() })}
-              className="px-3 rounded-xl border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
-            >
-              Now
-            </button>
+            {isToday && (
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, wake_time: nowHHMM() })}
+                className="px-3 rounded-xl border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+              >
+                Now
+              </button>
+            )}
           </div>
         </label>
 
@@ -213,7 +293,7 @@ export default function EntryForm() {
         </label>
 
         <div>
-          <p className="text-sm font-medium text-ink mb-2">Today's activities</p>
+          <p className="text-sm font-medium text-ink mb-2">Activities</p>
           <div className="grid grid-cols-3 gap-3">
             <CheckTile
               icon={Sparkles}
@@ -240,7 +320,7 @@ export default function EntryForm() {
 
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-3 pt-2 max-w-md mx-auto" style={{ background: "linear-gradient(180deg, transparent, #FFF8EC 30%)" }}>
           <button type="submit" disabled={saving} className="btn-primary w-full py-3 disabled:opacity-60 shadow-lg">
-            {saving ? "Saving…" : `Save today's sadhana`}
+            {saving ? "Saving…" : isToday ? "Save today's sadhana" : `Save sadhana for ${dateObj.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
           </button>
         </div>
       </form>

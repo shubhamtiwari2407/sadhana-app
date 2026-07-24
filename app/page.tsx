@@ -91,6 +91,7 @@ export default async function DashboardPage({
     const dateStr = new Date(viewedYear, viewedMonth, dayNum).toISOString().slice(0, 10);
     return {
       day: dayNum,
+      dateStr,
       logged: loggedDates.has(dateStr),
       isFuture: dateStr > todayStr,
       isToday: dateStr === todayStr,
@@ -251,24 +252,31 @@ export default async function DashboardPage({
           {Array.from({ length: leadingBlanks }).map((_, i) => (
             <div key={`blank-${i}`} />
           ))}
-          {monthDays.map((d) => (
-            <div
-              key={d.day}
-              className="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium"
-              style={{
-                background: d.logged
-                  ? "linear-gradient(135deg, #EA580C, #FBBF24)"
-                  : d.isFuture
-                  ? "rgba(180,83,9,0.05)"
-                  : "rgba(180,83,9,0.12)",
-                color: d.logged ? "#FFF8EC" : "#B45309",
-                outline: d.isToday ? "2px solid #D97706" : "none",
-                outlineOffset: "-2px",
-              }}
-            >
-              {d.day}
-            </div>
-          ))}
+          {monthDays.map((d) =>
+            d.isFuture ? (
+              <div
+                key={d.day}
+                className="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium"
+                style={{ background: "rgba(180,83,9,0.05)", color: "#B45309" }}
+              >
+                {d.day}
+              </div>
+            ) : (
+              <Link
+                key={d.day}
+                href={`/entry?date=${d.dateStr}`}
+                className="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium transition-transform active:scale-90"
+                style={{
+                  background: d.logged ? "linear-gradient(135deg, #EA580C, #FBBF24)" : "rgba(180,83,9,0.12)",
+                  color: d.logged ? "#FFF8EC" : "#B45309",
+                  outline: d.isToday ? "2px solid #D97706" : "none",
+                  outlineOffset: "-2px",
+                }}
+              >
+                {d.day}
+              </Link>
+            )
+          )}
         </div>
         <div className="flex items-center gap-3 mt-3 text-[11px] text-ink-muted">
           <span className="flex items-center gap-1">
