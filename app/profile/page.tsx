@@ -105,7 +105,7 @@ export default async function ProfilePage() {
   const earnedAtByKey = new Map((badgeRecords ?? []).map((r) => [r.badge_key, r.earned_at as string]));
 
   // --- 5. year heatmap ---
-  const loggedDatesSet = new Set(allDates);
+  const scoreByDate = new Map(allEntries.map((e) => [e.entry_date, e.score ?? 0]));
 
   const joined = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
@@ -242,9 +242,9 @@ export default async function ProfilePage() {
       <div className="card p-5">
         <div className="flex items-center gap-2 mb-4">
           <Award className="w-4 h-4 text-gold" />
-          <h3 className="text-sm font-semibold text-ink">{now.getFullYear()} at a glance</h3>
+          <h3 className="text-sm font-semibold text-ink">Contribution activity</h3>
         </div>
-        <YearHeatmap year={now.getFullYear()} loggedDates={loggedDatesSet} />
+        <YearHeatmap scoreByDate={scoreByDate} />
       </div>
 
       {/* 8 — reminders */}
