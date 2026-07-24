@@ -3,6 +3,7 @@ import { Marcellus, Nunito, Poppins } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import PullToRefresh from "@/components/PullToRefresh";
+import ReminderScheduler from "@/components/ReminderScheduler";
 
 const marcellus = Marcellus({
   subsets: ["latin"],
@@ -45,6 +46,7 @@ export default function RootLayout({
             <PullToRefresh>{children}</PullToRefresh>
           </main>
           <BottomNav />
+          <ReminderScheduler />
         </div>
       </body>
     </html>

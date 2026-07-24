@@ -14,3 +14,25 @@ export function calcStreak(dates: string[]): number {
   }
   return streak;
 }
+
+// Longest consecutive-day run across the entire history, not just the
+// current one. Doesn't care whether the streak is still active today.
+export function calcLongestStreak(dates: string[]): number {
+  if (dates.length === 0) return 0;
+  const sorted = Array.from(new Set(dates)).sort();
+  let longest = 1;
+  let current = 1;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1] + "T00:00:00");
+    const curr = new Date(sorted[i] + "T00:00:00");
+    const dayDiff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    if (dayDiff === 1) {
+      current += 1;
+      longest = Math.max(longest, current);
+    } else {
+      current = 1;
+    }
+  }
+  return longest;
+}

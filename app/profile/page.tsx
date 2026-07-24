@@ -1,9 +1,14 @@
 import Image from "next/image";
-import { Flame, CalendarCheck, Trophy } from "lucide-react";
+import { Flame, CalendarCheck, Trophy, Award, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
-import { calcStreak } from "@/lib/streak";
+import DisplayNameEditor from "@/components/DisplayNameEditor";
+import ExportDataButton from "@/components/ExportDataButton";
+import ReminderSettings from "@/components/ReminderSettings";
+import YearHeatmap from "@/components/YearHeatmap";
+import { calcStreak, calcLongestStreak } from "@/lib/streak";
 import { computeBadges } from "@/lib/badges";
+import { getPeriodRange, fetchRanking } from "@/lib/leaderboard";
 
 const BADGE_ICON: Record<string, string> = {
   streak: "🏆",
@@ -11,6 +16,15 @@ const BADGE_ICON: Record<string, string> = {
   reading: "📖",
   earlyRiser: "🌅",
 };
+
+function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 export default async function ProfilePage() {
   const supabase = createClient();
@@ -27,20 +41,71 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, created_at")
+    .select("full_name, avatar_url, created_at, reminder_enabled, reminder_time")
     .eq("id", user.id)
     .maybeSingle();
 
   const { data: entries } = await supabase
     .from("sadhana_entries")
-    .select("entry_date, score, rounds_chanted, reading_minutes, wake_time")
+    .select("entry_date, score, rounds_chanted, reading_minutes, listening_minutes, wake_time")
     .eq("user_id", user.id)
     .order("entry_date", { ascending: false });
 
-  const totalDays = entries?.length ?? 0;
-  const avgScore = totalDays ? Math.round(entries!.reduce((s, e) => s + (e.score ?? 0), 0) / totalDays) : 0;
-  const streak = calcStreak((entries ?? []).map((e) => e.entry_date));
-  const badges = computeBadges(entries ?? [], streak);
+  const allEntries = entries ?? [];
+  const allDates = allEntries.map((e) => e.entry_date);
+
+  // --- core stats ---
+  const totalDays = allEntries.length;
+  const avgScore = totalDays ? Math.round(allEntries.reduce((s, e) => s + (e.score ?? 0), 0) / totalDays) : 0;
+  const streak = calcStreak(allDates);
+  const longestStreak = calcLongestStreak(allDates);
+  const badges = computeBadges(allEntries, streak);
+
+  // --- 1. lifetime totals ---
+  const lifetimeRounds = allEntries.reduce((s, e) => s + (e.rounds_chanted ?? 0), 0);
+  const lifetimeReadingHours = Math.round(allEntries.reduce((s, e) => s + (e.reading_minutes ?? 0), 0) / 60);
+  const lifetimeHearingHours = Math.round(allEntries.reduce((s, e) => s + (e.listening_minutes ?? 0), 0) / 60);
+
+  // --- 3. this week's recap ---
+  const weekStart = startOfWeek(new Date());
+  const weekDates = new Set(allDates);
+  let daysThisWeek = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    if (d > new Date()) break;
+    if (weekDates.has(d.toISOString().slice(0, 10))) daysThisWeek++;
+  }
+
+  // --- 4. personal rank this month ---
+  const now = new Date();
+  const currentYear = String(now.getFullYear());
+  const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
+  const { startDate, endDate } = getPeriodRange(currentYear, currentMonth);
+  const monthRanking = await fetchRanking(supabase, startDate, endDate);
+  const myRankIndex = monthRanking.findIndex((r) => r.userId === user.id);
+  const myRank = myRankIndex === -1 ? null : myRankIndex + 1;
+
+  // --- 6. badge unlock dates: record any newly-earned badge, then read all records back ---
+  const earnedBadges = badges.filter((b) => b.earned);
+  if (earnedBadges.length > 0) {
+    const { data: existing } = await supabase.from("user_badges").select("badge_key").eq("user_id", user.id);
+    const existingKeys = new Set((existing ?? []).map((r) => r.badge_key));
+    const toInsert = earnedBadges
+      .filter((b) => !existingKeys.has(b.key))
+      .map((b) => ({ user_id: user.id, badge_key: b.key }));
+    if (toInsert.length > 0) {
+      await supabase.from("user_badges").insert(toInsert);
+    }
+  }
+  const { data: badgeRecords } = await supabase
+    .from("user_badges")
+    .select("badge_key, earned_at")
+    .eq("user_id", user.id);
+  const earnedAtByKey = new Map((badgeRecords ?? []).map((r) => [r.badge_key, r.earned_at as string]));
+
+  // --- 5. year heatmap ---
+  const loggedDatesSet = new Set(allDates);
 
   const joined = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
@@ -72,6 +137,9 @@ export default async function ProfilePage() {
         </div>
         <h1 className="font-display text-2xl text-ink relative">{profile?.full_name ?? "Devotee"}</h1>
         {joined && <p className="text-sm text-ink-muted mt-1 relative">In the circle since {joined}</p>}
+        <div className="relative">
+          <DisplayNameEditor userId={user.id} initialName={profile?.full_name ?? ""} />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -84,41 +152,111 @@ export default async function ProfilePage() {
         ))}
       </div>
 
+      {/* 2, 3, 4 — best streak, weekly recap, personal rank */}
       <div className="card p-5">
-        <h3 className="text-sm font-semibold text-ink mb-4">Badges</h3>
-        <div className="grid grid-cols-4 gap-3">
-          {badges.map((badge) => (
-            <div key={badge.key} className="flex flex-col items-center gap-1.5">
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
-                style={
-                  badge.earned
-                    ? {
-                        background: "linear-gradient(135deg, #F97316, #D4AF37)",
-                        boxShadow: "0 6px 16px rgba(212,175,55,0.4)",
-                        border: "2px solid rgba(255,255,255,0.6)",
-                      }
-                    : {
-                        background: "rgba(212,175,55,0.08)",
-                        border: "2px solid rgba(212,175,55,0.15)",
-                        opacity: 0.5,
-                      }
-                }
-              >
-                <span style={{ filter: badge.earned ? "none" : "grayscale(100%)" }}>{BADGE_ICON[badge.key]}</span>
-              </div>
-              <span className="text-[10px] text-center text-ink-muted leading-tight">{badge.label}</span>
-              {!badge.earned && badge.progressLabel && (
-                <span className="text-[9px] text-center text-gold-soft/80 leading-tight">
-                  {badge.progressLabel}
-                </span>
-              )}
-            </div>
-          ))}
+        <h3 className="text-sm font-semibold text-ink mb-4">This month</h3>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p className="text-xl font-numeric text-ink">{longestStreak}</p>
+            <p className="text-[10px] text-ink-muted mt-1">Longest streak ever</p>
+          </div>
+          <div>
+            <p className="text-xl font-numeric text-ink">{daysThisWeek}/7</p>
+            <p className="text-[10px] text-ink-muted mt-1">Logged this week</p>
+          </div>
+          <div>
+            <p className="text-xl font-numeric text-ink flex items-center justify-center gap-1">
+              {myRank ? `#${myRank}` : "—"}
+              {myRank && myRank <= 3 && <TrendingUp className="w-3.5 h-3.5 text-tulsi" />}
+            </p>
+            <p className="text-[10px] text-ink-muted mt-1">Rank this month</p>
+          </div>
         </div>
       </div>
 
+      {/* 1 — lifetime totals */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-ink mb-4">Lifetime totals</h3>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p className="text-xl font-numeric text-ink">{lifetimeRounds.toLocaleString()}</p>
+            <p className="text-[10px] text-ink-muted mt-1">Rounds chanted</p>
+          </div>
+          <div>
+            <p className="text-xl font-numeric text-ink">{lifetimeReadingHours}h</p>
+            <p className="text-[10px] text-ink-muted mt-1">Reading</p>
+          </div>
+          <div>
+            <p className="text-xl font-numeric text-ink">{lifetimeHearingHours}h</p>
+            <p className="text-[10px] text-ink-muted mt-1">Hearing</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 6 — badges with unlock dates */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-ink mb-4">Badges</h3>
+        <div className="grid grid-cols-4 gap-3">
+          {badges.map((badge) => {
+            const earnedAt = earnedAtByKey.get(badge.key);
+            return (
+              <div key={badge.key} className="flex flex-col items-center gap-1.5">
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
+                  style={
+                    badge.earned
+                      ? {
+                          background: "linear-gradient(135deg, #F97316, #D4AF37)",
+                          boxShadow: "0 6px 16px rgba(212,175,55,0.4)",
+                          border: "2px solid rgba(255,255,255,0.6)",
+                        }
+                      : {
+                          background: "rgba(212,175,55,0.08)",
+                          border: "2px solid rgba(212,175,55,0.15)",
+                          opacity: 0.5,
+                        }
+                  }
+                >
+                  <span style={{ filter: badge.earned ? "none" : "grayscale(100%)" }}>
+                    {BADGE_ICON[badge.key]}
+                  </span>
+                </div>
+                <span className="text-[10px] text-center text-ink-muted leading-tight">{badge.label}</span>
+                {badge.earned && earnedAt && (
+                  <span className="text-[9px] text-center text-tulsi leading-tight">
+                    {new Date(earnedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
+                )}
+                {!badge.earned && badge.progressLabel && (
+                  <span className="text-[9px] text-center text-gold-soft/80 leading-tight">
+                    {badge.progressLabel}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 5 — year contribution heatmap */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Award className="w-4 h-4 text-gold" />
+          <h3 className="text-sm font-semibold text-ink">{now.getFullYear()} at a glance</h3>
+        </div>
+        <YearHeatmap year={now.getFullYear()} loggedDates={loggedDatesSet} />
+      </div>
+
+      {/* 8 — reminders */}
+      <ReminderSettings
+        userId={user.id}
+        initialEnabled={profile?.reminder_enabled ?? false}
+        initialTime={profile?.reminder_time ?? "20:00"}
+      />
+
+      {/* 9 — export + sign out */}
       <div className="flex flex-col gap-2">
+        <ExportDataButton userId={user.id} />
         <SignOutButton />
       </div>
     </div>
