@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function HeroBanner() {
   return (
-    <div className="rounded-2xl overflow-hidden shadow-lg h-80 relative">
+    <div className="rounded-2xl overflow-hidden shadow-lg h-88 relative">
       <Image
   src="/hero-krishna.jpg"
   alt="Radha Krishna"

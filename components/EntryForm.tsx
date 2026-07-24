@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sunrise, Moon, Flame, BookOpen, Headphones, Sparkles, HandHeart, BookMarked } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { calculateScore } from "@/lib/scoring";
-import Toggle from "@/components/Toggle";
+import CheckTile from "@/components/CheckTile";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
+const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 
 export default function EntryForm() {
   const supabase = createClient();
@@ -17,15 +19,17 @@ export default function EntryForm() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [form, setForm] = useState({
-    sleep_time: "",
     wake_time: "",
+    sleep_time: "",
     rounds_chanted: 0,
     reading_minutes: 0,
     listening_minutes: 0,
-    service_minutes: 0,
     mangal_aarti: false,
+    seva: false,
     srimad_bhagavatam: false,
   });
+
+  const liveScore = useMemo(() => calculateScore(form), [form]);
 
   useEffect(() => {
     (async () => {
@@ -43,13 +47,13 @@ export default function EntryForm() {
 
       if (data) {
         setForm({
-          sleep_time: data.sleep_time ?? "",
           wake_time: data.wake_time ?? "",
+          sleep_time: data.sleep_time ?? "",
           rounds_chanted: data.rounds_chanted ?? 0,
           reading_minutes: data.reading_minutes ?? 0,
           listening_minutes: data.listening_minutes ?? 0,
-          service_minutes: data.service_minutes ?? 0,
           mangal_aarti: data.mangal_aarti ?? false,
+          seva: data.seva ?? false,
           srimad_bhagavatam: data.srimad_bhagavatam ?? false,
         });
       }
@@ -99,17 +103,58 @@ export default function EntryForm() {
   if (loading) return <p className="text-ink-muted text-center py-16">Loading today's entry…</p>;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="font-display text-2xl text-gold-soft">Today's sadhana</h1>
-        <p className="text-sm text-ink-muted mt-1">
-          {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-        </p>
+    <div className="flex flex-col gap-4 pb-20">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl text-gold-soft">Today's sadhana</h1>
+          <p className="text-sm text-ink-muted mt-1">
+            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+        </div>
+        <div className="card px-3 py-2 text-center">
+          <p className="font-display text-xl text-gold-soft leading-none">{liveScore}</p>
+          <p className="text-[10px] text-ink-muted mt-0.5">pts so far</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          Rounds chanted
+          <span className="flex items-center gap-1.5">
+            <Sunrise className="w-4 h-4 text-peacock" /> Wake up time
+          </span>
+          <div className="flex gap-2">
+            <input
+              type="time"
+              className="p-3 flex-1"
+              value={form.wake_time}
+              onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
+            />
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, wake_time: nowHHMM() })}
+              className="px-3 rounded-xl border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+            >
+              Now
+            </button>
+          </div>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+          <span className="flex items-center gap-1.5">
+            <Moon className="w-4 h-4 text-peacock" /> Sleep time (previous day)
+          </span>
+          <input
+            type="time"
+            className="p-3"
+            value={form.sleep_time}
+            onChange={(e) => setForm({ ...form, sleep_time: e.target.value })}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+          <span className="flex items-center gap-1.5">
+            <Flame className="w-4 h-4 text-saffron" /> Rounds chanted
+          </span>
           <input
             type="number"
             min={0}
@@ -117,10 +162,34 @@ export default function EntryForm() {
             value={form.rounds_chanted}
             onChange={(e) => setForm({ ...form, rounds_chanted: Number(e.target.value) })}
           />
+          <div className="flex gap-2 mt-1">
+            {[
+              { label: "+1", delta: 1 },
+              { label: "+4", delta: 4 },
+            ].map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => setForm({ ...form, rounds_chanted: form.rounds_chanted + chip.delta })}
+                className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+              >
+                {chip.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, rounds_chanted: 16 })}
+              className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+            >
+              Set 16
+            </button>
+          </div>
         </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          Reading (minutes)
+          <span className="flex items-center gap-1.5">
+            <BookOpen className="w-4 h-4 text-gold" /> Reading (minutes)
+          </span>
           <input
             type="number"
             min={0}
@@ -131,38 +200,9 @@ export default function EntryForm() {
         </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          Service (minutes)
-          <input
-            type="number"
-            min={0}
-            className="p-3"
-            value={form.service_minutes}
-            onChange={(e) => setForm({ ...form, service_minutes: Number(e.target.value) })}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          Wake up time
-          <input
-            type="time"
-            className="p-3"
-            value={form.wake_time}
-            onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          Sleep time (previous day)
-          <input
-            type="time"
-            className="p-3"
-            value={form.sleep_time}
-            onChange={(e) => setForm({ ...form, sleep_time: e.target.value })}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          Listening (minutes)
+          <span className="flex items-center gap-1.5">
+            <Headphones className="w-4 h-4 text-gold" /> Hearing (minutes)
+          </span>
           <input
             type="number"
             min={0}
@@ -172,22 +212,37 @@ export default function EntryForm() {
           />
         </label>
 
-        <Toggle
-          label="Mangal aarti attended"
-          checked={form.mangal_aarti}
-          onChange={(v) => setForm({ ...form, mangal_aarti: v })}
-        />
-        <Toggle
-          label="Srimad Bhagavatam class"
-          checked={form.srimad_bhagavatam}
-          onChange={(v) => setForm({ ...form, srimad_bhagavatam: v })}
-        />
+        <div>
+          <p className="text-sm font-medium text-ink mb-2">Today's activities</p>
+          <div className="grid grid-cols-3 gap-3">
+            <CheckTile
+              icon={Sparkles}
+              label="Mangal aarti"
+              checked={form.mangal_aarti}
+              onChange={(v) => setForm({ ...form, mangal_aarti: v })}
+            />
+            <CheckTile
+              icon={HandHeart}
+              label="Seva"
+              checked={form.seva}
+              onChange={(v) => setForm({ ...form, seva: v })}
+            />
+            <CheckTile
+              icon={BookMarked}
+              label="SB class"
+              checked={form.srimad_bhagavatam}
+              onChange={(v) => setForm({ ...form, srimad_bhagavatam: v })}
+            />
+          </div>
+        </div>
 
         {error && <p className="text-saffron text-sm">{error}</p>}
 
-        <button type="submit" disabled={saving} className="btn-primary py-3 disabled:opacity-60">
-          {saving ? "Saving…" : "Save today's sadhana"}
-        </button>
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-3 pt-2 max-w-md mx-auto" style={{ background: "linear-gradient(180deg, transparent, #FFF8EC 30%)" }}>
+          <button type="submit" disabled={saving} className="btn-primary w-full py-3 disabled:opacity-60 shadow-lg">
+            {saving ? "Saving…" : `Save today's sadhana`}
+          </button>
+        </div>
       </form>
 
       {showSuccess && (

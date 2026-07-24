@@ -89,6 +89,7 @@ export default async function DashboardPage({
 
   const monthLabel = monthStart.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
+  // prev/next month links — can't navigate past the current month
   const prevMonthDate = new Date(viewedYear, viewedMonth - 1, 1);
   const nextMonthDate = new Date(viewedYear, viewedMonth + 1, 1);
   const isCurrentMonth = viewedYear === currentYear && viewedMonth === currentMonth;
@@ -133,9 +134,6 @@ export default async function DashboardPage({
         ) : (
           <>
             <div className="grid grid-cols-3 gap-3">
-              <StatCard icon={Flame} value={entry.rounds_chanted} label="Japa" accent="saffron" />
-              <StatCard icon={BookOpen} value={`${entry.reading_minutes}m`} label="Reading" accent="gold" />
-              <StatCard icon={HandHeart} value={`${entry.service_minutes}m`} label="Service" accent="tulsi" />
               <StatCard
                 icon={Sunrise}
                 value={entry.wake_time ? entry.wake_time.slice(0, 5) : "—"}
@@ -148,12 +146,19 @@ export default async function DashboardPage({
                 label="Sleep"
                 accent="peacock"
               />
-              <StatCard icon={Headphones} value={`${entry.listening_minutes}m`} label="Listening" accent="gold" />
+              <StatCard icon={Flame} value={entry.rounds_chanted} label="Japa" accent="saffron" />
+              <StatCard icon={BookOpen} value={`${entry.reading_minutes}m`} label="Reading" accent="gold" />
+              <StatCard icon={Headphones} value={`${entry.listening_minutes}m`} label="Hearing" accent="gold" />
             </div>
             <div className="flex gap-3 mt-3 flex-wrap">
               {entry.mangal_aarti && (
                 <span className="flex items-center gap-1 text-xs text-gold-soft bg-gold/10 rounded-full px-3 py-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> Mangal aarti
+                </span>
+              )}
+              {entry.seva && (
+                <span className="flex items-center gap-1 text-xs text-saffron bg-saffron/10 rounded-full px-3 py-1.5">
+                  <HandHeart className="w-3.5 h-3.5" /> Seva
                 </span>
               )}
               {entry.srimad_bhagavatam && (
