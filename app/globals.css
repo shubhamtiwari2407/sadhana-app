@@ -38,7 +38,7 @@ body::before {
   z-index: 0;
   pointer-events: none;
 
-  background-image: url("/images/tulasi-bg.png");
+  background-image: url("tulasi-bg.png");
   background-repeat: no-repeat;
   background-position: center center;
   background-size: 420px auto;
