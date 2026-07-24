@@ -27,6 +27,10 @@ export const metadata: Metadata = {
   title: "Sadhana Circle",
   description: "Track your daily sadhana. Grow together.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/favicon-32.jpg",
+    apple: "/icons/apple-touch-icon.jpg",
+  },
 };
 
 export const viewport: Viewport = {
