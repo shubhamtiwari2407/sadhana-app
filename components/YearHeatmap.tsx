@@ -3,22 +3,8 @@ const DAY_LABELS: Record<number, string> = { 1: "Mon", 3: "Wed", 5: "Fri" };
 const CELL = 11; // px
 const GAP = 3; // px
 
-function scoreToLevel(score: number | undefined): number {
-  if (score === undefined) return 0;
-  if (score <= 0) return 0;
-  if (score < 16) return 1;
-  if (score < 36) return 2;
-  if (score < 56) return 3;
-  return 4;
-}
-
-const LEVEL_COLOR = [
-  "rgba(212,175,55,0.10)", // 0 - not logged
-  "rgba(249,115,22,0.35)", // 1
-  "rgba(249,115,22,0.6)", // 2
-  "linear-gradient(135deg, #F97316, #D4AF37)", // 3
-  "linear-gradient(135deg, #EA580C, #D4AF37)", // 4 - deepest gold
-];
+const LOGGED_FILL = "linear-gradient(135deg, #F97316, #D4AF37)";
+const EMPTY_FILL = "rgba(212,175,55,0.10)";
 
 export default function YearHeatmap({
   year,
@@ -28,6 +14,7 @@ export default function YearHeatmap({
   scoreByDate: Map<string, number>;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
+  const loggedDates = new Set(scoreByDate.keys());
 
   const jan1 = new Date(year, 0, 1);
   const dec31 = new Date(year, 11, 31);
@@ -96,16 +83,17 @@ export default function YearHeatmap({
                   const dateStr = date.toISOString().slice(0, 10);
                   const outsideYear = date.getFullYear() !== year;
                   const isFuture = dateStr > todayStr;
-                  const level = outsideYear || isFuture ? -1 : scoreToLevel(scoreByDate.get(dateStr));
+                  const logged = loggedDates.has(dateStr);
+                  const hidden = outsideYear || isFuture;
                   return (
                     <div
                       key={d}
-                      title={outsideYear || isFuture ? undefined : dateStr}
+                      title={hidden ? undefined : dateStr}
                       style={{
                         width: CELL,
                         height: CELL,
                         borderRadius: 3,
-                        background: outsideYear || isFuture ? "transparent" : LEVEL_COLOR[level],
+                        background: hidden ? "transparent" : logged ? LOGGED_FILL : EMPTY_FILL,
                       }}
                     />
                   );
@@ -115,12 +103,15 @@ export default function YearHeatmap({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-1.5 mt-3" style={{ marginLeft: 28 }}>
-          <span className="text-[10px] text-ink-muted mr-1">Less</span>
-          {LEVEL_COLOR.map((color, i) => (
-            <div key={i} style={{ width: CELL, height: CELL, borderRadius: 3, background: color }} />
-          ))}
-          <span className="text-[10px] text-ink-muted ml-1">More</span>
+        <div className="flex items-center gap-3 mt-3 text-[10px] text-ink-muted" style={{ marginLeft: 28 }}>
+          <span className="flex items-center gap-1.5">
+            <span style={{ width: CELL, height: CELL, borderRadius: 3, background: LOGGED_FILL, display: "inline-block" }} />
+            Logged
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span style={{ width: CELL, height: CELL, borderRadius: 3, background: EMPTY_FILL, display: "inline-block" }} />
+            Missed
+          </span>
         </div>
       </div>
     </div>

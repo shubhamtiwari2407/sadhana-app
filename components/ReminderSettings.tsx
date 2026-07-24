@@ -89,8 +89,9 @@ export default function ReminderSettings({
       )}
 
       <p className="text-[11px] text-ink-muted mt-2">
-        Only fires while the app is open in a browser tab or installed as a PWA — not a true background push
-        notification.
+        Vibrates and stays in your notification shade until you dismiss it. Only fires while the app is open in
+        a browser tab or installed as a PWA — not a true background push notification. Vibration support varies
+        by device and browser.
       </p>
     </div>
   );

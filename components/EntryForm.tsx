@@ -150,7 +150,7 @@ export default function EntryForm() {
   if (loading) return <p className="text-ink-muted text-center py-16">Loading entry…</p>;
 
   return (
-    <div className="flex flex-col gap-5 pb-24">
+    <div className="flex flex-col gap-5 pb-44">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl text-ink">

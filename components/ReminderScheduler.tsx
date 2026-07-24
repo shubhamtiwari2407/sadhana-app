@@ -5,6 +5,34 @@ import { createClient } from "@/lib/supabase/client";
 
 const LAST_FIRED_KEY = "sadhana_reminder_last_fired";
 
+async function fireNotification() {
+  const options: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
+    body: "Have you logged today's sadhana yet?",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: "sadhana-daily-reminder", // replaces any existing reminder instead of stacking
+    renotify: true, // re-vibrates/alerts even if a previous reminder is still showing
+    requireInteraction: true, // stays in the notification shade until the person taps/dismisses it
+    vibrate: [200, 100, 200, 100, 200],
+  };
+
+  // Vibration and requireInteraction only work through a service worker's
+  // showNotification() — the plain `new Notification()` constructor silently
+  // ignores both on most browsers. Since this is a PWA, a service worker is
+  // already registered, so we route through it.
+  if ("serviceWorker" in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification("Sadhana Circle", options);
+      return;
+    } catch {
+      // fall through to the plain constructor below
+    }
+  }
+
+  new Notification("Sadhana Circle", options);
+}
+
 export default function ReminderScheduler() {
   useEffect(() => {
     const supabase = createClient();
@@ -30,10 +58,7 @@ export default function ReminderScheduler() {
         const lastFired = localStorage.getItem(LAST_FIRED_KEY);
 
         if (nowHHMM === profile.reminder_time && lastFired !== todayStr) {
-          new Notification("Sadhana Circle", {
-            body: "Have you logged today's sadhana yet?",
-            icon: "/icons/icon-192.png",
-          });
+          fireNotification();
           localStorage.setItem(LAST_FIRED_KEY, todayStr);
         }
       };
