@@ -60,8 +60,8 @@ export default async function DashboardPage({
 
   const firstName = (profile?.full_name ?? "Devotee").split(" ")[0];
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-
+  const greeting = "Hare Krsna"
+  
   // --- monthly calendar grid, with prev/next navigation ---
   const today = new Date();
   const currentYear = today.getFullYear();
