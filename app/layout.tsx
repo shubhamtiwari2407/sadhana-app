@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Work_Sans } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
+import PullToRefresh from "@/components/PullToRefresh";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -34,7 +35,9 @@ export default function RootLayout({
     <html lang="en" className={`${fraunces.variable} ${workSans.variable}`}>
       <body className="font-body">
         <div className="max-w-md mx-auto relative min-h-screen">
-          <main className="px-4 pt-6 pb-24">{children}</main>
+          <main className="px-4 pt-6 pb-24">
+            <PullToRefresh>{children}</PullToRefresh>
+          </main>
           <BottomNav />
         </div>
       </body>
