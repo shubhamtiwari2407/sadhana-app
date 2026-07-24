@@ -1,14 +1,13 @@
 import Image from "next/image";
-import { Flame, CalendarCheck, Trophy, Award, TrendingUp } from "lucide-react";
+import { Flame, CalendarCheck, Trophy, Award } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
 import DisplayNameEditor from "@/components/DisplayNameEditor";
 import ExportDataButton from "@/components/ExportDataButton";
 import ReminderSettings from "@/components/ReminderSettings";
 import YearHeatmap from "@/components/YearHeatmap";
-import { calcStreak, calcLongestStreak } from "@/lib/streak";
+import { calcStreak } from "@/lib/streak";
 import { computeBadges } from "@/lib/badges";
-import { getPeriodRange, fetchRanking } from "@/lib/leaderboard";
 
 const BADGE_ICON: Record<string, string> = {
   streak: "🏆",
@@ -16,15 +15,6 @@ const BADGE_ICON: Record<string, string> = {
   reading: "📖",
   earlyRiser: "🌅",
 };
-
-function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 export default async function ProfilePage() {
   const supabase = createClient();
@@ -47,7 +37,7 @@ export default async function ProfilePage() {
 
   const { data: entries } = await supabase
     .from("sadhana_entries")
-    .select("entry_date, score, rounds_chanted, reading_minutes, listening_minutes, wake_time")
+    .select("entry_date, score, rounds_chanted, reading_minutes, wake_time")
     .eq("user_id", user.id)
     .order("entry_date", { ascending: false });
 
@@ -58,35 +48,9 @@ export default async function ProfilePage() {
   const totalDays = allEntries.length;
   const avgScore = totalDays ? Math.round(allEntries.reduce((s, e) => s + (e.score ?? 0), 0) / totalDays) : 0;
   const streak = calcStreak(allDates);
-  const longestStreak = calcLongestStreak(allDates);
   const badges = computeBadges(allEntries, streak);
 
-  // --- 1. lifetime totals ---
-  const lifetimeRounds = allEntries.reduce((s, e) => s + (e.rounds_chanted ?? 0), 0);
-  const lifetimeReadingHours = Math.round(allEntries.reduce((s, e) => s + (e.reading_minutes ?? 0), 0) / 60);
-  const lifetimeHearingHours = Math.round(allEntries.reduce((s, e) => s + (e.listening_minutes ?? 0), 0) / 60);
-
-  // --- 3. this week's recap ---
-  const weekStart = startOfWeek(new Date());
-  const weekDates = new Set(allDates);
-  let daysThisWeek = 0;
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    if (d > new Date()) break;
-    if (weekDates.has(d.toISOString().slice(0, 10))) daysThisWeek++;
-  }
-
-  // --- 4. personal rank this month ---
-  const now = new Date();
-  const currentYear = String(now.getFullYear());
-  const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
-  const { startDate, endDate } = getPeriodRange(currentYear, currentMonth);
-  const monthRanking = await fetchRanking(supabase, startDate, endDate);
-  const myRankIndex = monthRanking.findIndex((r) => r.userId === user.id);
-  const myRank = myRankIndex === -1 ? null : myRankIndex + 1;
-
-  // --- 6. badge unlock dates: record any newly-earned badge, then read all records back ---
+  // --- badge unlock dates: record any newly-earned badge, then read all records back ---
   const earnedBadges = badges.filter((b) => b.earned);
   if (earnedBadges.length > 0) {
     const { data: existing } = await supabase.from("user_badges").select("badge_key").eq("user_id", user.id);
@@ -152,47 +116,6 @@ export default async function ProfilePage() {
         ))}
       </div>
 
-      {/* 2, 3, 4 — best streak, weekly recap, personal rank */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-ink mb-4">This month</h3>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-xl font-numeric text-ink">{longestStreak}</p>
-            <p className="text-[10px] text-ink-muted mt-1">Longest streak ever</p>
-          </div>
-          <div>
-            <p className="text-xl font-numeric text-ink">{daysThisWeek}/7</p>
-            <p className="text-[10px] text-ink-muted mt-1">Logged this week</p>
-          </div>
-          <div>
-            <p className="text-xl font-numeric text-ink flex items-center justify-center gap-1">
-              {myRank ? `#${myRank}` : "—"}
-              {myRank && myRank <= 3 && <TrendingUp className="w-3.5 h-3.5 text-tulsi" />}
-            </p>
-            <p className="text-[10px] text-ink-muted mt-1">Rank this month</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 1 — lifetime totals */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-ink mb-4">Lifetime totals</h3>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-xl font-numeric text-ink">{lifetimeRounds.toLocaleString()}</p>
-            <p className="text-[10px] text-ink-muted mt-1">Rounds chanted</p>
-          </div>
-          <div>
-            <p className="text-xl font-numeric text-ink">{lifetimeReadingHours}h</p>
-            <p className="text-[10px] text-ink-muted mt-1">Reading</p>
-          </div>
-          <div>
-            <p className="text-xl font-numeric text-ink">{lifetimeHearingHours}h</p>
-            <p className="text-[10px] text-ink-muted mt-1">Hearing</p>
-          </div>
-        </div>
-      </div>
-
       {/* 6 — badges with unlock dates */}
       <div className="card p-5">
         <h3 className="text-sm font-semibold text-ink mb-4">Badges</h3>
@@ -244,7 +167,13 @@ export default async function ProfilePage() {
           <Award className="w-4 h-4 text-gold" />
           <h3 className="text-sm font-semibold text-ink">Contribution activity</h3>
         </div>
-        <YearHeatmap scoreByDate={scoreByDate} />
+        <YearHeatmap year={new Date().getFullYear()} scoreByDate={scoreByDate} />
+      </div>
+
+      {/* settings section */}
+      <div className="flex items-center gap-2 mt-1">
+        <span className="text-xs font-semibold uppercase tracking-wide text-gold-soft">Settings</span>
+        <span className="flex-1 divider-gold" />
       </div>
 
       {/* 8 — reminders */}

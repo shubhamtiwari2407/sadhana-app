@@ -8,7 +8,6 @@ import { calculateScore } from "@/lib/scoring";
 import CheckTile from "@/components/CheckTile";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 
 function shiftDate(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00");
@@ -207,27 +206,15 @@ export default function EntryForm() {
         <div className="card p-5">
           <h2 className="text-sm font-semibold text-ink mb-4">Sleep and waking</h2>
           <div className="flex flex-col gap-4">
-            <label className="block">
+<label className="block">
               <FieldLabel icon={Sunrise}>Wake up time</FieldLabel>
-              <div className="flex gap-2">
-                <input
-                  type="time"
-                  className="flex-1"
-                  value={form.wake_time}
-                  onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
-                />
-                {isToday && (
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, wake_time: nowHHMM() })}
-                    className="px-3 rounded-2xl border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
-                  >
-                    Now
-                  </button>
-                )}
-              </div>
+              <input
+                type="time"
+                className="w-full"
+                value={form.wake_time}
+                onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
+              />
             </label>
-
             <label className="block">
               <FieldLabel icon={Moon}>Sleep time (previous day)</FieldLabel>
               <input

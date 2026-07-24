@@ -1,6 +1,5 @@
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS: Record<number, string> = { 1: "Mon", 3: "Wed", 5: "Fri" };
-const TOTAL_WEEKS = 53;
 const CELL = 11; // px
 const GAP = 3; // px
 
@@ -21,17 +20,28 @@ const LEVEL_COLOR = [
   "linear-gradient(135deg, #EA580C, #D4AF37)", // 4 - deepest gold
 ];
 
-export default function YearHeatmap({ scoreByDate }: { scoreByDate: Map<string, number> }) {
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
+export default function YearHeatmap({
+  year,
+  scoreByDate,
+}: {
+  year: number;
+  scoreByDate: Map<string, number>;
+}) {
+  const todayStr = new Date().toISOString().slice(0, 10);
 
-  const currentSunday = new Date(today);
-  currentSunday.setDate(today.getDate() - today.getDay());
+  const jan1 = new Date(year, 0, 1);
+  const dec31 = new Date(year, 11, 31);
 
-  const gridStart = new Date(currentSunday);
-  gridStart.setDate(currentSunday.getDate() - (TOTAL_WEEKS - 1) * 7);
+  // pad out to full weeks (Sun-Sat) so the grid starts/ends cleanly
+  const gridStart = new Date(jan1);
+  gridStart.setDate(jan1.getDate() - jan1.getDay());
+  const gridEnd = new Date(dec31);
+  gridEnd.setDate(dec31.getDate() + (6 - dec31.getDay()));
 
-  const weeks = Array.from({ length: TOTAL_WEEKS }, (_, w) =>
+  const totalDays = Math.round((gridEnd.getTime() - gridStart.getTime()) / 86400000) + 1;
+  const totalWeeks = totalDays / 7;
+
+  const weeks = Array.from({ length: totalWeeks }, (_, w) =>
     Array.from({ length: 7 }, (_, d) => {
       const date = new Date(gridStart);
       date.setDate(gridStart.getDate() + w * 7 + d);
@@ -42,7 +52,7 @@ export default function YearHeatmap({ scoreByDate }: { scoreByDate: Map<string, 
   // month label sits above the first week column where that month begins
   let lastLabeledMonth = -1;
   const monthLabels = weeks.map((week) => {
-    const firstOfMonth = week.find((d) => d.getDate() === 1);
+    const firstOfMonth = week.find((d) => d.getFullYear() === year && d.getDate() === 1);
     if (firstOfMonth && firstOfMonth.getMonth() !== lastLabeledMonth) {
       lastLabeledMonth = firstOfMonth.getMonth();
       return MONTH_NAMES[firstOfMonth.getMonth()];
@@ -50,7 +60,7 @@ export default function YearHeatmap({ scoreByDate }: { scoreByDate: Map<string, 
     return null;
   });
 
-  const gridWidth = TOTAL_WEEKS * (CELL + GAP);
+  const gridWidth = totalWeeks * (CELL + GAP);
 
   return (
     <div className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -84,17 +94,18 @@ export default function YearHeatmap({ scoreByDate }: { scoreByDate: Map<string, 
               <div key={w} className="flex flex-col" style={{ gap: GAP }}>
                 {week.map((date, d) => {
                   const dateStr = date.toISOString().slice(0, 10);
+                  const outsideYear = date.getFullYear() !== year;
                   const isFuture = dateStr > todayStr;
-                  const level = isFuture ? -1 : scoreToLevel(scoreByDate.get(dateStr));
+                  const level = outsideYear || isFuture ? -1 : scoreToLevel(scoreByDate.get(dateStr));
                   return (
                     <div
                       key={d}
-                      title={isFuture ? undefined : dateStr}
+                      title={outsideYear || isFuture ? undefined : dateStr}
                       style={{
                         width: CELL,
                         height: CELL,
                         borderRadius: 3,
-                        background: isFuture ? "transparent" : LEVEL_COLOR[level],
+                        background: outsideYear || isFuture ? "transparent" : LEVEL_COLOR[level],
                       }}
                     />
                   );
