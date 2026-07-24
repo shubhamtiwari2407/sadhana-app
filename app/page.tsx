@@ -8,6 +8,7 @@ import MilestoneCelebration from "@/components/MilestoneCelebration";
 import QuoteCard from "@/components/QuoteCard";
 import { calcStreak } from "@/lib/streak";
 import { computeBadges } from "@/lib/badges";
+import { getGreeting } from "@/lib/greeting";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -69,8 +70,7 @@ export default async function DashboardPage({
     .eq("entry_date", todayISO());
 
   const firstName = (profile?.full_name ?? "Devotee").split(" ")[0];
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greeting = getGreeting();
 
   // --- monthly calendar grid, with prev/next navigation ---
   const today = new Date();

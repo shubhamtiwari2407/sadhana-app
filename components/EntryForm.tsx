@@ -246,8 +246,14 @@ export default function EntryForm() {
       </form>
 
       {showSuccess && (
-        <div className="mt-1 bg-green-100 border border-green-300 rounded-xl p-4 text-center fade-in-up">
-          <p className="text-green-800 font-semibold">✅ Sadhana logged successfully!</p>
+        <div
+          className="mt-1 rounded-xl p-4 text-center pop-in relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #FDE68A, #FBBF24, #EA580C)" }}
+        >
+          <Sparkles className="w-4 h-4 absolute top-2 left-3 text-white/70" />
+          <Sparkles className="w-3 h-3 absolute bottom-2 right-5 text-white/60" />
+          <Sparkles className="w-5 h-5 absolute top-1 right-9 text-white/50" />
+          <p className="text-white font-semibold">✨ Sadhana logged successfully!</p>
         </div>
       )}
     </div>

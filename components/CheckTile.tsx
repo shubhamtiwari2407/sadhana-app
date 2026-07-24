@@ -20,14 +20,14 @@ export default function CheckTile({
       role="checkbox"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="relative flex flex-col items-center justify-center gap-1.5 aspect-square rounded-xl border p-2 text-center transition-colors"
+      className="relative flex flex-col items-center justify-center gap-1.5 aspect-square rounded-xl border p-2 text-center transition-all duration-150 active:scale-90"
       style={{
         background: checked ? "linear-gradient(135deg, #EA580C, #FBBF24)" : "#FFFFFF",
         borderColor: checked ? "transparent" : "rgba(217,119,6,0.3)",
       }}
     >
       {checked && (
-        <span className="absolute top-1.5 right-1.5 bg-white rounded-full p-0.5">
+        <span className="absolute top-1.5 right-1.5 bg-white rounded-full p-0.5 check-pop">
           <Check className="w-3 h-3 text-saffron" strokeWidth={3} />
         </span>
       )}

@@ -91,6 +91,11 @@ export default async function ProfilePage() {
                 {BADGE_ICON[badge.key]}
               </div>
               <span className="text-[10px] text-center text-ink-muted leading-tight">{badge.label}</span>
+              {!badge.earned && badge.progressLabel && (
+                <span className="text-[9px] text-center text-gold-soft/70 leading-tight">
+                  {badge.progressLabel}
+                </span>
+              )}
             </div>
           ))}
         </div>
