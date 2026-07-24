@@ -51,7 +51,7 @@ export default function ScoreFilter({
           <select
             value={year}
             onChange={(e) => update("year", e.target.value)}
-            className="w-full rounded-lg border border-gold/30 bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/40"
+            className="w-full rounded-xl border border-gold/30 bg-white/70 backdrop-blur-sm px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/40"
           >
             {years.map((y) => (
               <option key={y} value={y}>
@@ -65,7 +65,7 @@ export default function ScoreFilter({
           <select
             value={month}
             onChange={(e) => update("month", e.target.value)}
-            className="w-full rounded-lg border border-gold/30 bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/40"
+            className="w-full rounded-xl border border-gold/30 bg-white/70 backdrop-blur-sm px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/40"
           >
             {MONTHS.map((m) => (
               <option key={m.value} value={m.value}>

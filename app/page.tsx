@@ -30,7 +30,7 @@ export default async function DashboardPage({
     return (
       <div className="flex flex-col items-center text-center gap-4 py-16 fade-in-up">
         <HeroBanner />
-        <h1 className="font-display text-2xl text-gold-soft mt-4">Welcome to Sadhana Circle</h1>
+        <h1 className="font-display text-2xl text-ink mt-4">Welcome to Sadhana Circle</h1>
         <p className="text-ink-muted max-w-xs">
           Sign in to log today's practice and see your own dashboard here.
         </p>
@@ -136,32 +136,56 @@ export default async function DashboardPage({
     <div className="flex flex-col gap-6 fade-in-up">
       <MilestoneCelebration badges={badges} />
 
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-peacock-light">{greeting}</p>
-          <h1 className="font-display text-2xl text-gold-soft">{firstName}</h1>
+      {/* Premium hero card: greeting, name, streak, quote */}
+      <div
+        className="card p-5 relative overflow-hidden"
+        style={{ background: "linear-gradient(160deg, rgba(255,255,255,0.78), rgba(253,236,209,0.6))" }}
+      >
+        <div
+          className="absolute -top-10 -right-10 w-32 h-32 rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(212,175,55,0.35), transparent 70%)",
+            filter: "blur(6px)",
+          }}
+          aria-hidden="true"
+        />
+        <div className="flex items-center justify-between relative">
+          <div>
+            <p className="text-sm text-peacock-light">{greeting}</p>
+            <h1 className="font-display text-3xl text-ink mt-0.5">{firstName}</h1>
+          </div>
+          <div
+            className="w-12 h-12 rounded-full overflow-hidden shrink-0"
+            style={{ border: "2px solid rgba(212,175,55,0.5)", boxShadow: "0 4px 12px rgba(107,62,38,0.15)" }}
+          >
+            {profile?.avatar_url ? (
+              <Image src={profile.avatar_url} alt="" width={48} height={48} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-bg-elevated" />
+            )}
+          </div>
         </div>
-        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gold/40">
-          {profile?.avatar_url ? (
-            <Image src={profile.avatar_url} alt="" width={40} height={40} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-bg-elevated" />
-          )}
+
+        {streak > 0 && (
+          <div
+            className="flex items-center gap-2 rounded-full px-3.5 py-1.5 w-fit mt-4 relative"
+            style={{ background: "rgba(249,115,22,0.12)" }}
+          >
+            <Flame className="w-4 h-4 text-saffron" />
+            <span className="text-sm font-semibold text-ink font-numeric">{streak} day streak</span>
+          </div>
+        )}
+
+        <div className="mt-4 pt-4 relative" style={{ borderTop: "1px solid rgba(212,175,55,0.25)" }}>
+          <QuoteCard bare />
         </div>
       </div>
 
-      {streak > 0 && (
-        <div className="flex items-center gap-2 bg-gold/10 rounded-full px-4 py-2 w-fit">
-          <Flame className="w-5 h-5 text-saffron" />
-          <span className="text-sm font-bold text-ink">{streak} day streak 🔥</span>
-        </div>
-      )}
-
       {typeof todayCount === "number" && todayCount > 0 && (
-        <Link href="/board" className="card p-3 flex items-center justify-between group">
+        <Link href="/board" className="card p-3.5 flex items-center justify-between group">
           <span className="text-sm text-ink flex items-center gap-2">
             <Flame className="w-4 h-4 text-saffron shrink-0" />
-            {todayCount} devotee{todayCount === 1 ? "" : "s"} logged sadhana today 🔥
+            {todayCount} devotee{todayCount === 1 ? "" : "s"} logged sadhana today
           </span>
           <ChevronRight className="w-4 h-4 text-ink-muted group-hover:text-ink transition-colors shrink-0" />
         </Link>
@@ -169,12 +193,12 @@ export default async function DashboardPage({
 
       <HeroBanner />
 
-      <div>
-        <h2 className="font-display text-lg text-gold-soft mb-3">Today's sadhana</h2>
+      <div className="card p-5">
+        <h2 className="font-display text-lg text-ink mb-4">Today's sadhana</h2>
         {!entry ? (
-          <div className="card p-6 text-center">
-            <p className="text-ink-muted text-sm mb-3">You haven't logged today's sadhana yet.</p>
-            <Link href="/entry" className="btn-primary px-5 py-2 inline-block">
+          <div className="text-center py-2">
+            <p className="text-ink-muted text-sm mb-4">You haven't logged today's sadhana yet.</p>
+            <Link href="/entry" className="btn-primary px-6 py-3 inline-block">
               Log today
             </Link>
           </div>
@@ -184,11 +208,12 @@ export default async function DashboardPage({
               <CompletionRing percent={completionPercent} score={entry.score ?? 0} />
             </div>
 
-            <div className="flex gap-2 mt-4 flex-wrap justify-center">
+            <div className="flex gap-2 mt-5 flex-wrap justify-center">
               {infoChips.map((chip, i) => (
                 <span
                   key={i}
-                  className="flex items-center gap-1.5 text-xs text-ink bg-bg-elevated rounded-full px-3 py-1.5"
+                  className="flex items-center gap-1.5 text-xs text-ink rounded-full px-3 py-1.5"
+                  style={{ background: "rgba(212,175,55,0.12)" }}
                 >
                   <chip.icon className="w-3.5 h-3.5 text-gold" />
                   {chip.label}
@@ -214,8 +239,8 @@ export default async function DashboardPage({
               )}
             </div>
 
-            <div className="text-center mt-3">
-              <Link href="/entry" className="text-xs text-ink-muted hover:text-ink underline">
+            <div className="text-center mt-4">
+              <Link href="/entry" className="text-xs text-gold-soft hover:text-gold underline underline-offset-2">
                 Edit today's entry
               </Link>
             </div>
@@ -223,24 +248,24 @@ export default async function DashboardPage({
         )}
       </div>
 
-      <div className="card p-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
           <Link
             href={toParams(prevMonthDate)}
-            className="p-1.5 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors"
+            className="p-2 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors"
             aria-label="Previous month"
           >
             <ChevronLeft className="w-4 h-4" />
           </Link>
           <h3 className="text-sm font-semibold text-ink">{monthLabel}</h3>
           {isCurrentMonth ? (
-            <span className="p-1.5 rounded-full text-ink-muted/30" aria-hidden="true">
+            <span className="p-2 rounded-full text-ink-muted/30" aria-hidden="true">
               <ChevronRight className="w-4 h-4" />
             </span>
           ) : (
             <Link
               href={toParams(nextMonthDate)}
-              className="p-1.5 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors"
+              className="p-2 rounded-full hover:bg-gold/10 text-ink-muted hover:text-ink transition-colors"
               aria-label="Next month"
             >
               <ChevronRight className="w-4 h-4" />
@@ -248,7 +273,7 @@ export default async function DashboardPage({
           )}
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: leadingBlanks }).map((_, i) => (
             <div key={`blank-${i}`} />
           ))}
@@ -256,8 +281,8 @@ export default async function DashboardPage({
             d.isFuture ? (
               <div
                 key={d.day}
-                className="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium"
-                style={{ background: "rgba(180,83,9,0.05)", color: "#B45309" }}
+                className="aspect-square rounded-lg flex items-center justify-center text-[10px] font-medium font-numeric"
+                style={{ background: "rgba(212,175,55,0.06)", color: "#9A6C3A" }}
               >
                 {d.day}
               </div>
@@ -265,12 +290,15 @@ export default async function DashboardPage({
               <Link
                 key={d.day}
                 href={`/entry?date=${d.dateStr}`}
-                className="aspect-square rounded-md flex items-center justify-center text-[10px] font-medium transition-transform active:scale-90"
+                className={`aspect-square rounded-lg flex items-center justify-center text-[10px] font-medium font-numeric transition-transform active:scale-90 ${
+                  d.isToday ? "gold-pulse" : ""
+                }`}
                 style={{
-                  background: d.logged ? "linear-gradient(135deg, #EA580C, #FBBF24)" : "rgba(180,83,9,0.12)",
-                  color: d.logged ? "#FFF8EC" : "#B45309",
-                  outline: d.isToday ? "2px solid #D97706" : "none",
+                  background: d.logged ? "linear-gradient(135deg, #F97316, #D4AF37)" : "rgba(212,175,55,0.14)",
+                  color: d.logged ? "#FFF9F2" : "#6B3E26",
+                  outline: d.isToday ? "2px solid #D4AF37" : "none",
                   outlineOffset: "-2px",
+                  boxShadow: d.logged ? "0 3px 8px rgba(249,115,22,0.3)" : "none",
                 }}
               >
                 {d.day}
@@ -278,22 +306,20 @@ export default async function DashboardPage({
             )
           )}
         </div>
-        <div className="flex items-center gap-3 mt-3 text-[11px] text-ink-muted">
+        <div className="flex items-center gap-3 mt-4 text-[11px] text-ink-muted">
           <span className="flex items-center gap-1">
             <span
               className="w-2.5 h-2.5 rounded-sm inline-block"
-              style={{ background: "linear-gradient(135deg, #EA580C, #FBBF24)" }}
+              style={{ background: "linear-gradient(135deg, #F97316, #D4AF37)" }}
             />
             Logged
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "rgba(180,83,9,0.12)" }} />
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "rgba(212,175,55,0.14)" }} />
             Missed
           </span>
         </div>
       </div>
-
-      <QuoteCard />
     </div>
   );
 }

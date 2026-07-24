@@ -15,8 +15,18 @@ function dayOfYear(): number {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
-export default function QuoteCard() {
+export default function QuoteCard({ bare = false }: { bare?: boolean }) {
   const reflection = REFLECTIONS[dayOfYear() % REFLECTIONS.length];
+
+  if (bare) {
+    return (
+      <div>
+        <p className="text-sm italic text-ink/90">{reflection.text}</p>
+        <p className="text-xs text-ink-muted mt-1.5 text-right">— {reflection.source}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="card p-4 bg-gradient-to-br from-peacock/20 to-gold/10">
       <p className="text-sm italic text-ink">{reflection.text}</p>

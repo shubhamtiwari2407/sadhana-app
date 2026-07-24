@@ -16,12 +16,12 @@ export default function PeacockFeather({
       aria-hidden="true"
     >
       {/* quill */}
-      <path d="M30 94 L30 40" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M30 94 L30 40" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" />
       {/* plume */}
       <path
         d="M30 4C42 16 48 32 44 48C41 60 35 68 30 72C25 68 19 60 16 48C12 32 18 16 30 4Z"
         fill="url(#feather-body)"
-        stroke="#D97706"
+        stroke="#D4AF37"
         strokeWidth="1"
       />
       {/* barbs */}
@@ -36,7 +36,7 @@ export default function PeacockFeather({
         );
       })}
       {/* eye */}
-      <ellipse cx="30" cy="34" rx="9" ry="13" fill="#123C42" stroke="#D97706" strokeWidth="1" />
+      <ellipse cx="30" cy="34" rx="9" ry="13" fill="#123C42" stroke="#D4AF37" strokeWidth="1" />
       <ellipse cx="30" cy="34" rx="5" ry="8" fill="#1F6F78" />
       <ellipse cx="30" cy="34" rx="2" ry="3.4" fill="#0E262A" />
       <defs>

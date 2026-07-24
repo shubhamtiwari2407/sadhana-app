@@ -5,22 +5,26 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "#FFF8EC",
+        bg: "#FFF9F2",
         "bg-elevated": "#FDECD1",
         "bg-card": "#FFFFFF",
-        ink: "#5B3A0F",
-        "ink-muted": "#B45309",
+        ink: "#6B3E26",
+        "ink-muted": "#9A6C3A",
         gold: "#D97706",
-        "gold-soft": "#B45309",
+        "gold-soft": "#D4AF37",
         tulsi: "#4D7C4A",
-        saffron: "#EA580C",
+        saffron: "#F97316",
         peacock: "#C2410C",
         "peacock-deep": "#9A3412",
         "peacock-light": "#F59E0B",
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "serif"],
-        body: ["var(--font-worksans)", "sans-serif"],
+        display: ["var(--font-marcellus)", "serif"],
+        body: ["var(--font-nunito)", "sans-serif"],
+        numeric: ["var(--font-poppins)", "sans-serif"],
+      },
+      borderRadius: {
+        card: "22px",
       },
     },
   },

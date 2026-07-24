@@ -16,11 +16,13 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md flex justify-around py-2 z-50"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm flex justify-around items-center py-2.5 px-2 z-50 rounded-full"
       style={{
-        background: "linear-gradient(180deg, #fffaf0 0%, #fdecd1 100%)",
-        borderTop: "1px solid rgba(217, 119, 6, 0.25)",
-        boxShadow: "0 -4px 16px rgba(180, 83, 9, 0.08)",
+        background: "rgba(255, 255, 255, 0.72)",
+        WebkitBackdropFilter: "blur(20px)",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(212, 175, 55, 0.35)",
+        boxShadow: "0 12px 32px rgba(107, 62, 38, 0.16), inset 0 1px 0 rgba(255,255,255,0.6)",
       }}
     >
       {TABS.map(({ href, label, icon: Icon }) => {
@@ -29,12 +31,28 @@ export default function BottomNav() {
           <Link
             key={href}
             href={href}
-            className={`flex flex-col items-center gap-1 px-3 py-1 transition-colors ${
-              active ? "text-gold-soft" : "text-ink-muted hover:text-ink"
-            }`}
+            className="flex flex-col items-center gap-1 px-3 py-1 transition-colors"
           >
-            <Icon className="w-5 h-5" strokeWidth={active ? 2.4 : 1.8} />
-            <span className="text-[11px]">{label}</span>
+            <span
+              className="flex items-center justify-center w-9 h-9 rounded-full transition-all"
+              style={{
+                background: active ? "linear-gradient(135deg, #F97316, #D4AF37)" : "transparent",
+                boxShadow: active ? "0 4px 14px rgba(249, 115, 22, 0.45)" : "none",
+              }}
+            >
+              <Icon
+                className="transition-all"
+                style={{
+                  width: active ? 20 : 18,
+                  height: active ? 20 : 18,
+                  color: active ? "#FFF9F2" : "#9A6C3A",
+                }}
+                strokeWidth={active ? 2.4 : 1.8}
+              />
+            </span>
+            <span className={`text-[10px] ${active ? "text-gold font-semibold" : "text-ink-muted"}`}>
+              {label}
+            </span>
           </Link>
         );
       })}

@@ -46,53 +46,70 @@ export default async function ProfilePage() {
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : null;
 
+  const METRICS = [
+    { icon: CalendarCheck, value: totalDays, label: "Days logged", color: "#4D7C4A" },
+    { icon: Flame, value: streak, label: "Day streak", color: "#F97316" },
+    { icon: Trophy, value: avgScore, label: "Avg. score", color: "#D4AF37" },
+  ];
+
   return (
     <div className="flex flex-col gap-6 fade-in-up">
-      <div className="flex flex-col items-center text-center">
-        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gold/40 shadow-lg mb-3">
+      <div className="card p-6 flex flex-col items-center text-center relative overflow-hidden">
+        <div
+          className="absolute -top-10 -right-10 w-32 h-32 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent 70%)" }}
+          aria-hidden="true"
+        />
+        <div
+          className="w-24 h-24 rounded-full overflow-hidden mb-3 relative"
+          style={{ border: "3px solid #D4AF37", boxShadow: "0 10px 24px rgba(212,175,55,0.35)" }}
+        >
           {profile?.avatar_url ? (
             <Image src={profile.avatar_url} alt="" width={96} height={96} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-bg-elevated" />
           )}
         </div>
-        <h1 className="font-display text-xl text-gold-soft">{profile?.full_name ?? "Devotee"}</h1>
-        {joined && <p className="text-sm text-ink-muted">In the circle since {joined}</p>}
+        <h1 className="font-display text-2xl text-ink relative">{profile?.full_name ?? "Devotee"}</h1>
+        {joined && <p className="text-sm text-ink-muted mt-1 relative">In the circle since {joined}</p>}
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="card text-center p-3">
-          <CalendarCheck className="w-5 h-5 mx-auto mb-1 text-tulsi" />
-          <p className="text-xl font-display text-ink">{totalDays}</p>
-          <p className="text-xs text-ink-muted">Days logged</p>
-        </div>
-        <div className="card text-center p-3">
-          <Flame className="w-5 h-5 mx-auto mb-1 text-saffron" />
-          <p className="text-xl font-display text-ink">{streak}</p>
-          <p className="text-xs text-ink-muted">Day streak</p>
-        </div>
-        <div className="card text-center p-3">
-          <Trophy className="w-5 h-5 mx-auto mb-1 text-gold" />
-          <p className="text-xl font-display text-ink">{avgScore}</p>
-          <p className="text-xs text-ink-muted">Avg. score</p>
-        </div>
+        {METRICS.map((m) => (
+          <div key={m.label} className="card text-center p-4">
+            <m.icon className="w-5 h-5 mx-auto mb-2" style={{ color: m.color }} />
+            <p className="text-2xl font-numeric text-ink">{m.value}</p>
+            <p className="text-[11px] text-ink-muted mt-1">{m.label}</p>
+          </div>
+        ))}
       </div>
 
-      <div>
-        <h3 className="text-sm font-semibold text-ink mb-3">Badges</h3>
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-ink mb-4">Badges</h3>
         <div className="grid grid-cols-4 gap-3">
           {badges.map((badge) => (
-            <div key={badge.key} className="flex flex-col items-center gap-1">
+            <div key={badge.key} className="flex flex-col items-center gap-1.5">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${
-                  badge.earned ? "bg-gold/20" : "bg-bg-elevated opacity-35 grayscale"
-                }`}
+                className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
+                style={
+                  badge.earned
+                    ? {
+                        background: "linear-gradient(135deg, #F97316, #D4AF37)",
+                        boxShadow: "0 6px 16px rgba(212,175,55,0.4)",
+                        border: "2px solid rgba(255,255,255,0.6)",
+                      }
+                    : {
+                        background: "rgba(212,175,55,0.08)",
+                        border: "2px solid rgba(212,175,55,0.15)",
+                        opacity: 0.5,
+                      }
+                }
               >
-                {BADGE_ICON[badge.key]}
+                <span style={{ filter: badge.earned ? "none" : "grayscale(100%)" }}>{BADGE_ICON[badge.key]}</span>
               </div>
               <span className="text-[10px] text-center text-ink-muted leading-tight">{badge.label}</span>
               {!badge.earned && badge.progressLabel && (
-                <span className="text-[9px] text-center text-gold-soft/70 leading-tight">
+                <span className="text-[9px] text-center text-gold-soft/80 leading-tight">
                   {badge.progressLabel}
                 </span>
               )}

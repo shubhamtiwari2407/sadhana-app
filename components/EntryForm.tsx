@@ -27,6 +27,14 @@ const EMPTY_FORM = {
   srimad_bhagavatam: false,
 };
 
+function FieldLabel({ icon: Icon, children }: { icon: any; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gold-soft mb-1.5">
+      <Icon className="w-3.5 h-3.5" /> {children}
+    </span>
+  );
+}
+
 export default function EntryForm() {
   const supabase = createClient();
   const router = useRouter();
@@ -143,23 +151,23 @@ export default function EntryForm() {
   if (loading) return <p className="text-ink-muted text-center py-16">Loading entry…</p>;
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-5 pb-24">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl text-gold-soft">
+          <h1 className="font-display text-2xl text-ink">
             {isToday ? "Today's sadhana" : "Log past sadhana"}
           </h1>
           <p className="text-sm text-ink-muted mt-1">
             {dateObj.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
-        <div className="card px-3 py-2 text-center">
-          <p className="font-display text-xl text-gold-soft leading-none">{liveScore}</p>
+        <div className="card px-3.5 py-2.5 text-center">
+          <p className="font-numeric text-xl text-ink leading-none">{liveScore}</p>
           <p className="text-[10px] text-ink-muted mt-0.5">pts so far</p>
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2">
+      <div className="card flex items-center justify-center gap-2 py-2">
         <button
           type="button"
           onClick={() => navigateToDate(shiftDate(selectedDate, -1))}
@@ -189,111 +197,111 @@ export default function EntryForm() {
         <button
           type="button"
           onClick={() => navigateToDate(todayStr)}
-          className="text-xs text-gold-soft underline text-center -mt-2"
+          className="text-xs text-gold-soft underline text-center -mt-3"
         >
           Jump to today
         </button>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          <span className="flex items-center gap-1.5">
-            <Sunrise className="w-4 h-4 text-peacock" /> Wake up time
-          </span>
-          <div className="flex gap-2">
-            <input
-              type="time"
-              className="p-3 flex-1"
-              value={form.wake_time}
-              onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
-            />
-            {isToday && (
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, wake_time: nowHHMM() })}
-                className="px-3 rounded-xl border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
-              >
-                Now
-              </button>
-            )}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">Sleep and waking</h2>
+          <div className="flex flex-col gap-4">
+            <label className="block">
+              <FieldLabel icon={Sunrise}>Wake up time</FieldLabel>
+              <div className="flex gap-2">
+                <input
+                  type="time"
+                  className="flex-1"
+                  value={form.wake_time}
+                  onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
+                />
+                {isToday && (
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, wake_time: nowHHMM() })}
+                    className="px-3 rounded-2xl border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+                  >
+                    Now
+                  </button>
+                )}
+              </div>
+            </label>
+
+            <label className="block">
+              <FieldLabel icon={Moon}>Sleep time (previous day)</FieldLabel>
+              <input
+                type="time"
+                className="w-full"
+                value={form.sleep_time}
+                onChange={(e) => setForm({ ...form, sleep_time: e.target.value })}
+              />
+            </label>
           </div>
-        </label>
+        </div>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          <span className="flex items-center gap-1.5">
-            <Moon className="w-4 h-4 text-peacock" /> Sleep time (previous day)
-          </span>
-          <input
-            type="time"
-            className="p-3"
-            value={form.sleep_time}
-            onChange={(e) => setForm({ ...form, sleep_time: e.target.value })}
-          />
-        </label>
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">Chanting and study</h2>
+          <div className="flex flex-col gap-4">
+            <label className="block">
+              <FieldLabel icon={Flame}>Rounds chanted</FieldLabel>
+              <input
+                type="number"
+                min={0}
+                className="w-full"
+                value={form.rounds_chanted}
+                onChange={(e) => setForm({ ...form, rounds_chanted: Number(e.target.value) })}
+              />
+              <div className="flex gap-2 mt-2">
+                {[
+                  { label: "+1", delta: 1 },
+                  { label: "+4", delta: 4 },
+                ].map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => setForm({ ...form, rounds_chanted: form.rounds_chanted + chip.delta })}
+                    className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, rounds_chanted: 16 })}
+                  className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+                >
+                  Set 16
+                </button>
+              </div>
+            </label>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          <span className="flex items-center gap-1.5">
-            <Flame className="w-4 h-4 text-saffron" /> Rounds chanted
-          </span>
-          <input
-            type="number"
-            min={0}
-            className="p-3"
-            value={form.rounds_chanted}
-            onChange={(e) => setForm({ ...form, rounds_chanted: Number(e.target.value) })}
-          />
-          <div className="flex gap-2 mt-1">
-            {[
-              { label: "+1", delta: 1 },
-              { label: "+4", delta: 4 },
-            ].map((chip) => (
-              <button
-                key={chip.label}
-                type="button"
-                onClick={() => setForm({ ...form, rounds_chanted: form.rounds_chanted + chip.delta })}
-                className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
-              >
-                {chip.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, rounds_chanted: 16 })}
-              className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
-            >
-              Set 16
-            </button>
+            <label className="block">
+              <FieldLabel icon={BookOpen}>Reading (minutes)</FieldLabel>
+              <input
+                type="number"
+                min={0}
+                className="w-full"
+                value={form.reading_minutes}
+                onChange={(e) => setForm({ ...form, reading_minutes: Number(e.target.value) })}
+              />
+            </label>
+
+            <label className="block">
+              <FieldLabel icon={Headphones}>Hearing (minutes)</FieldLabel>
+              <input
+                type="number"
+                min={0}
+                className="w-full"
+                value={form.listening_minutes}
+                onChange={(e) => setForm({ ...form, listening_minutes: Number(e.target.value) })}
+              />
+            </label>
           </div>
-        </label>
+        </div>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          <span className="flex items-center gap-1.5">
-            <BookOpen className="w-4 h-4 text-gold" /> Reading (minutes)
-          </span>
-          <input
-            type="number"
-            min={0}
-            className="p-3"
-            value={form.reading_minutes}
-            onChange={(e) => setForm({ ...form, reading_minutes: Number(e.target.value) })}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-          <span className="flex items-center gap-1.5">
-            <Headphones className="w-4 h-4 text-gold" /> Hearing (minutes)
-          </span>
-          <input
-            type="number"
-            min={0}
-            className="p-3"
-            value={form.listening_minutes}
-            onChange={(e) => setForm({ ...form, listening_minutes: Number(e.target.value) })}
-          />
-        </label>
-
-        <div>
-          <p className="text-sm font-medium text-ink mb-2">Activities</p>
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">Activities</h2>
           <div className="grid grid-cols-3 gap-3">
             <CheckTile
               icon={Sparkles}
@@ -318,17 +326,24 @@ export default function EntryForm() {
 
         {error && <p className="text-saffron text-sm">{error}</p>}
 
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-3 pt-2 max-w-md mx-auto" style={{ background: "linear-gradient(180deg, transparent, #FFF8EC 30%)" }}>
-          <button type="submit" disabled={saving} className="btn-primary w-full py-3 disabled:opacity-60 shadow-lg">
-            {saving ? "Saving…" : isToday ? "Save today's sadhana" : `Save sadhana for ${dateObj.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
+        <div
+          className="fixed bottom-20 left-0 right-0 z-40 px-4 pb-2 pt-3 max-w-md mx-auto"
+          style={{ background: "linear-gradient(180deg, transparent, #FFF9F2 35%)" }}
+        >
+          <button type="submit" disabled={saving} className="btn-primary w-full py-3.5 disabled:opacity-60">
+            {saving
+              ? "Saving…"
+              : isToday
+              ? "Save today's sadhana"
+              : `Save sadhana for ${dateObj.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
           </button>
         </div>
       </form>
 
       {showSuccess && (
         <div
-          className="mt-1 rounded-xl p-4 text-center pop-in relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #FDE68A, #FBBF24, #EA580C)" }}
+          className="rounded-2xl p-4 text-center pop-in relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #FDE68A, #F97316, #D4AF37)" }}
         >
           <Sparkles className="w-4 h-4 absolute top-2 left-3 text-white/70" />
           <Sparkles className="w-3 h-3 absolute bottom-2 right-5 text-white/60" />
