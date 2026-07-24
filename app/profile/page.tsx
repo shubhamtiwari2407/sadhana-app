@@ -3,6 +3,7 @@ import { Flame, CalendarCheck, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
 import { calcStreak } from "@/lib/streak";
+import { computeBadges } from "@/lib/badges";
 
 const BADGE_ICON: Record<string, string> = {
   streak: "🏆",
@@ -39,20 +40,7 @@ export default async function ProfilePage() {
   const totalDays = entries?.length ?? 0;
   const avgScore = totalDays ? Math.round(entries!.reduce((s, e) => s + (e.score ?? 0), 0) / totalDays) : 0;
   const streak = calcStreak((entries ?? []).map((e) => e.entry_date));
-  const totalRounds = (entries ?? []).reduce((s, e) => s + (e.rounds_chanted ?? 0), 0);
-  const totalReadingMinutes = (entries ?? []).reduce((s, e) => s + (e.reading_minutes ?? 0), 0);
-  const earlyRiseDays = (entries ?? []).filter((e) => {
-    if (!e.wake_time) return false;
-    const [h, m] = e.wake_time.split(":").map(Number);
-    return h * 60 + m <= 4 * 60 + 30;
-  }).length;
-
-  const badges = [
-    { key: "streak", label: "7 Day Streak", earned: streak >= 7 },
-    { key: "rounds", label: "1,008 Rounds", earned: totalRounds >= 1008 },
-    { key: "reading", label: "10 Hrs Read", earned: totalReadingMinutes >= 600 },
-    { key: "earlyRiser", label: "Early Riser ×5", earned: earlyRiseDays >= 5 },
-  ];
+  const badges = computeBadges(entries ?? [], streak);
 
   const joined = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })

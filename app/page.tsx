@@ -3,9 +3,11 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Flame, BookOpen, Headphones, Sunrise, Moon, HandHeart, Sparkles, BookMarked } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import HeroBanner from "@/components/HeroBanner";
-import StatCard from "@/components/StatCard";
+import CompletionRing from "@/components/CompletionRing";
+import MilestoneCelebration from "@/components/MilestoneCelebration";
 import QuoteCard from "@/components/QuoteCard";
 import { calcStreak } from "@/lib/streak";
+import { computeBadges } from "@/lib/badges";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -51,17 +53,25 @@ export default async function DashboardPage({
     .eq("entry_date", todayISO())
     .maybeSingle();
 
-  const { data: allDates } = await supabase
+  // expanded to include fields needed for badge computation, not just dates
+  const { data: allEntries } = await supabase
     .from("sadhana_entries")
-    .select("entry_date")
+    .select("entry_date, rounds_chanted, reading_minutes, wake_time")
     .eq("user_id", user.id);
 
-  const streak = calcStreak((allDates ?? []).map((e) => e.entry_date));
+  const streak = calcStreak((allEntries ?? []).map((e) => e.entry_date));
+  const badges = computeBadges(allEntries ?? [], streak);
+
+  // how many devotees (including this user) have logged sadhana today, circle-wide
+  const { count: todayCount } = await supabase
+    .from("sadhana_entries")
+    .select("user_id", { count: "exact", head: true })
+    .eq("entry_date", todayISO());
 
   const firstName = (profile?.full_name ?? "Devotee").split(" ")[0];
   const hour = new Date().getHours();
-  const greeting = "Hare Krsna"
-  
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
   // --- monthly calendar grid, with prev/next navigation ---
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -70,7 +80,7 @@ export default async function DashboardPage({
   const viewedYear = searchParams.year ? Number(searchParams.year) : currentYear;
   const viewedMonth = searchParams.month ? Number(searchParams.month) - 1 : currentMonth; // 0-indexed
 
-  const loggedDates = new Set((allDates ?? []).map((e) => e.entry_date));
+  const loggedDates = new Set((allEntries ?? []).map((e) => e.entry_date));
   const todayStr = todayISO();
   const totalDaysInMonth = daysInMonth(viewedYear, viewedMonth);
   const monthStart = new Date(viewedYear, viewedMonth, 1);
@@ -89,7 +99,6 @@ export default async function DashboardPage({
 
   const monthLabel = monthStart.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
-  // prev/next month links — can't navigate past the current month
   const prevMonthDate = new Date(viewedYear, viewedMonth - 1, 1);
   const nextMonthDate = new Date(viewedYear, viewedMonth + 1, 1);
   const isCurrentMonth = viewedYear === currentYear && viewedMonth === currentMonth;
@@ -97,8 +106,35 @@ export default async function DashboardPage({
   const toParams = (d: Date) =>
     `?year=${d.getFullYear()}&month=${String(d.getMonth() + 1).padStart(2, "0")}`;
 
+  // completion ring: how many of today's trackable items have something logged
+  const trackedFields = entry
+    ? [
+        !!entry.wake_time,
+        !!entry.sleep_time,
+        (entry.rounds_chanted ?? 0) > 0,
+        (entry.reading_minutes ?? 0) > 0,
+        (entry.listening_minutes ?? 0) > 0,
+        !!entry.mangal_aarti,
+        !!entry.seva,
+        !!entry.srimad_bhagavatam,
+      ]
+    : [];
+  const completionPercent = entry ? (trackedFields.filter(Boolean).length / trackedFields.length) * 100 : 0;
+
+  const infoChips = entry
+    ? [
+        { icon: Sunrise, label: entry.wake_time ? entry.wake_time.slice(0, 5) : "No wake time" },
+        { icon: Moon, label: entry.sleep_time ? entry.sleep_time.slice(0, 5) : "No sleep time" },
+        { icon: Flame, label: `${entry.rounds_chanted} rounds` },
+        { icon: BookOpen, label: `${entry.reading_minutes}m reading` },
+        { icon: Headphones, label: `${entry.listening_minutes}m hearing` },
+      ]
+    : [];
+
   return (
     <div className="flex flex-col gap-6 fade-in-up">
+      <MilestoneCelebration badges={badges} />
+
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-peacock-light">{greeting}</p>
@@ -120,6 +156,16 @@ export default async function DashboardPage({
         </div>
       )}
 
+      {typeof todayCount === "number" && todayCount > 0 && (
+        <Link href="/board" className="card p-3 flex items-center justify-between group">
+          <span className="text-sm text-ink flex items-center gap-2">
+            <Flame className="w-4 h-4 text-saffron shrink-0" />
+            {todayCount} devotee{todayCount === 1 ? "" : "s"} logged sadhana today 🔥
+          </span>
+          <ChevronRight className="w-4 h-4 text-ink-muted group-hover:text-ink transition-colors shrink-0" />
+        </Link>
+      )}
+
       <HeroBanner />
 
       <div>
@@ -133,24 +179,23 @@ export default async function DashboardPage({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard
-                icon={Sunrise}
-                value={entry.wake_time ? entry.wake_time.slice(0, 5) : "—"}
-                label="Wake up"
-                accent="peacock"
-              />
-              <StatCard
-                icon={Moon}
-                value={entry.sleep_time ? entry.sleep_time.slice(0, 5) : "—"}
-                label="Sleep"
-                accent="peacock"
-              />
-              <StatCard icon={Flame} value={entry.rounds_chanted} label="Japa" accent="saffron" />
-              <StatCard icon={BookOpen} value={`${entry.reading_minutes}m`} label="Reading" accent="gold" />
-              <StatCard icon={Headphones} value={`${entry.listening_minutes}m`} label="Hearing" accent="gold" />
+            <div className="flex justify-center py-2">
+              <CompletionRing percent={completionPercent} score={entry.score ?? 0} />
             </div>
-            <div className="flex gap-3 mt-3 flex-wrap">
+
+            <div className="flex gap-2 mt-4 flex-wrap justify-center">
+              {infoChips.map((chip, i) => (
+                <span
+                  key={i}
+                  className="flex items-center gap-1.5 text-xs text-ink bg-bg-elevated rounded-full px-3 py-1.5"
+                >
+                  <chip.icon className="w-3.5 h-3.5 text-gold" />
+                  {chip.label}
+                </span>
+              ))}
+            </div>
+
+            <div className="flex gap-2 mt-2 flex-wrap justify-center">
               {entry.mangal_aarti && (
                 <span className="flex items-center gap-1 text-xs text-gold-soft bg-gold/10 rounded-full px-3 py-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> Mangal aarti
@@ -166,8 +211,11 @@ export default async function DashboardPage({
                   <BookMarked className="w-3.5 h-3.5" /> SB class
                 </span>
               )}
-              <Link href="/entry" className="text-xs text-ink-muted hover:text-ink ml-auto self-center underline">
-                Edit
+            </div>
+
+            <div className="text-center mt-3">
+              <Link href="/entry" className="text-xs text-ink-muted hover:text-ink underline">
+                Edit today's entry
               </Link>
             </div>
           </>
