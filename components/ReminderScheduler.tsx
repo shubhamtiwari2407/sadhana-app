@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { toLocalISODate } from "@/lib/date";
 
 const LAST_FIRED_KEY = "sadhana_reminder_last_fired";
 
@@ -54,7 +55,7 @@ export default function ReminderScheduler() {
       const check = () => {
         const now = new Date();
         const nowHHMM = now.toTimeString().slice(0, 5);
-        const todayStr = now.toISOString().slice(0, 10);
+        const todayStr = toLocalISODate(now);
         const lastFired = localStorage.getItem(LAST_FIRED_KEY);
 
         if (nowHHMM === profile.reminder_time && lastFired !== todayStr) {

@@ -9,8 +9,9 @@ import QuoteCard from "@/components/QuoteCard";
 import { calcStreak } from "@/lib/streak";
 import { computeBadges } from "@/lib/badges";
 import { getGreeting } from "@/lib/greeting";
+import { toLocalISODate } from "@/lib/date";
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => toLocalISODate(new Date());
 
 function daysInMonth(year: number, month: number): number {
   // month is 0-indexed (JS Date convention)
@@ -88,7 +89,7 @@ export default async function DashboardPage({
 
   const monthDays = Array.from({ length: totalDaysInMonth }, (_, i) => {
     const dayNum = i + 1;
-    const dateStr = new Date(viewedYear, viewedMonth, dayNum).toISOString().slice(0, 10);
+    const dateStr = toLocalISODate(new Date(viewedYear, viewedMonth, dayNum));
     return {
       day: dayNum,
       dateStr,

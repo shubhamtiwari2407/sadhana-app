@@ -6,13 +6,14 @@ import { ChevronLeft, ChevronRight, Sunrise, Moon, Flame, BookOpen, Headphones, 
 import { createClient } from "@/lib/supabase/client";
 import { calculateScore } from "@/lib/scoring";
 import CheckTile from "@/components/CheckTile";
+import { toLocalISODate } from "@/lib/date";
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => toLocalISODate(new Date());
 
 function shiftDate(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00");
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return toLocalISODate(d);
 }
 
 const EMPTY_FORM = {
@@ -150,7 +151,7 @@ export default function EntryForm() {
   if (loading) return <p className="text-ink-muted text-center py-16">Loading entry…</p>;
 
   return (
-    <div className="flex flex-col gap-5 pb-44">
+    <div className="flex flex-col gap-5 pb-24">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl text-ink">
@@ -206,20 +207,21 @@ export default function EntryForm() {
         <div className="card p-5">
           <h2 className="text-sm font-semibold text-ink mb-4">Sleep and waking</h2>
           <div className="flex flex-col gap-4">
-<label className="block">
+            <label className="block">
               <FieldLabel icon={Sunrise}>Wake up time</FieldLabel>
               <input
                 type="time"
-                className="w-full"
+                className="w-full text-left"
                 value={form.wake_time}
                 onChange={(e) => setForm({ ...form, wake_time: e.target.value })}
               />
             </label>
+
             <label className="block">
               <FieldLabel icon={Moon}>Sleep time (previous day)</FieldLabel>
               <input
                 type="time"
-                className="w-full"
+                className="w-full text-left"
                 value={form.sleep_time}
                 onChange={(e) => setForm({ ...form, sleep_time: e.target.value })}
               />
@@ -272,6 +274,15 @@ export default function EntryForm() {
                 value={form.reading_minutes}
                 onChange={(e) => setForm({ ...form, reading_minutes: Number(e.target.value) })}
               />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, reading_minutes: form.reading_minutes + 15 })}
+                  className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+                >
+                  +15
+                </button>
+              </div>
             </label>
 
             <label className="block">
@@ -283,6 +294,15 @@ export default function EntryForm() {
                 value={form.listening_minutes}
                 onChange={(e) => setForm({ ...form, listening_minutes: Number(e.target.value) })}
               />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, listening_minutes: form.listening_minutes + 15 })}
+                  className="px-3 py-1 rounded-full border border-gold/30 text-xs font-semibold text-gold-soft hover:bg-gold/10 transition-colors"
+                >
+                  +15
+                </button>
+              </div>
             </label>
           </div>
         </div>

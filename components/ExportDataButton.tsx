@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-
+import { toLocalISODate } from "@/lib/date";
 const COLUMNS = [
   "entry_date",
   "wake_time",
@@ -49,7 +49,7 @@ export default function ExportDataButton({ userId }: { userId: string }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `sadhana-history-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `sadhana-history-${toLocalISODate(new Date())}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

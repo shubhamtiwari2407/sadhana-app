@@ -1,5 +1,6 @@
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DAY_LABELS: Record<number, string> = { 1: "Mon", 3: "Wed", 5: "Fri" };
+import { toLocalISODate } from "@/lib/date";
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];const DAY_LABELS: Record<number, string> = { 1: "Mon", 3: "Wed", 5: "Fri" };
 const CELL = 11; // px
 const GAP = 3; // px
 
@@ -13,7 +14,7 @@ export default function YearHeatmap({
   year: number;
   scoreByDate: Map<string, number>;
 }) {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = toLocalISODate(new Date());
   const loggedDates = new Set(scoreByDate.keys());
 
   const jan1 = new Date(year, 0, 1);
@@ -80,7 +81,7 @@ export default function YearHeatmap({
             {weeks.map((week, w) => (
               <div key={w} className="flex flex-col" style={{ gap: GAP }}>
                 {week.map((date, d) => {
-                  const dateStr = date.toISOString().slice(0, 10);
+                  const dateStr = toLocalISODate(date);
                   const outsideYear = date.getFullYear() !== year;
                   const isFuture = dateStr > todayStr;
                   const logged = loggedDates.has(dateStr);
